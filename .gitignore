@@ -1,0 +1,5 @@
+target/*
+ac-library-rs/*
+.vscode/*
+contest/target/*
+fort/target/*

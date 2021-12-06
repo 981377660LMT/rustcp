@@ -1,0 +1,25 @@
+use std::{io::{StdinLock, BufWriter, StdoutLock, Write}, panic};
+use crate::{fast_input::FastInput, util::debug, prefix_sum::PrefixSum};
+
+pub unsafe fn solve_one(test_id: u32, fi: &mut FastInput<StdinLock>, fo: &mut BufWriter<StdoutLock>) {
+    let n = fi.ri();
+    let m = fi.ri();
+    let mut data = Vec::with_capacity(n as usize);
+    for _ in 0..n {
+        data.push(fi.rl());
+    } 
+    let ps = PrefixSum::new(data);
+    for _ in 0..m { 
+        let l = fi.ri();
+        let r = fi.ri() - 1;
+        let res = ps.interval(l as isize, r as isize);
+        writeln!(fo, "{}", res);
+    }
+}
+  
+pub unsafe fn solve_multi(fi: &mut FastInput<StdinLock>, fo: &mut BufWriter<StdoutLock>) {
+    let t: u32 = 1;//fi.read();
+    for test_id in 1 .. t + 1 {
+        solve_one(test_id, fi, fo);
+    }
+}
