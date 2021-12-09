@@ -1,6 +1,6 @@
 use std::cmp::min;
 
-use crate::algebraic_structure::{Monoid, Group};
+use crate::{algebraic_structure::{Monoid, Group}, arithmetic::IdentityAdd};
 
 ///
 /// prefix sum
@@ -38,7 +38,7 @@ where T: Monoid {
             sum[i] = sum[i] + sum[i - 1];
         }
         let total = if sum.len() == 0 {
-            T::add_identity()
+            <T as IdentityAdd>::ZERO
         } else {
             sum[sum.len() - 1]
         };
@@ -50,7 +50,7 @@ where T: Monoid {
     pub fn prefix(&self, n: isize) -> T {
         let n = min(n, self.sum.len() as isize - 1);
         if n < 0 {
-            T::add_identity()
+            <T as IdentityAdd>::ZERO
         } else {
             self.sum[n as usize]
         }
@@ -64,7 +64,7 @@ where T: Group {
     }
     pub fn interval(&self, l: isize, r: isize) -> T {
         if l > r {
-            T::add_identity()
+            <T as IdentityAdd>::ZERO
         } else {
             self.prefix(r) - self.prefix(l - 1) 
         }

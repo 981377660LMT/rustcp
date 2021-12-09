@@ -1,21 +1,29 @@
-use std::{io::{StdinLock, BufWriter, StdoutLock, Write}, panic, cmp::min};
-use crate::{fast_input::FastInput, util::debug, sparse_table::SparseTable};
+use std::{io::{StdinLock, BufWriter, StdoutLock, Write}, panic, cmp::min, ops::Add};
+use crate::{fast_input::FastInput, util::debug, arithmetic::*, fenwick_tree::FenwickTree};
 
 pub unsafe fn solve_one(test_id: u32, fi: &mut FastInput<StdinLock>, fo: &mut BufWriter<StdoutLock>) {
     let n = fi.ru();
     let q = fi.ru();
-    let mut v = Vec::with_capacity(n);
-    for i in 0..n {
-        v.push(fi.ri());
+    let mut a = Vec::with_capacity(n);
+    for _ in 0..n {
+        a.push(fi.rl());
     }
-    let st = debug!(SparseTable::new(&v[..], min));
-    for i in 0..q {
-        let l = fi.ru();
-        let r = fi.ru() - 1;
-        let (l, r) = debug!((l, r));
-        let ans = st.query(l, r);
-        writeln!(fo, "{}", ans);
-    }   
+    let mut ft = FenwickTree::with_initial_value(&a);
+    
+    for _ in 0..q {
+       // ft = debug!(ft);
+        let t = fi.ri();
+        if t == 0 {
+            let p = fi.ru();
+            let x = fi.rl();
+            ft.update(p, x);
+        } else {
+            let l = fi.ru();
+            let r = fi.ru() - 1;
+            let sum = ft.query_range(l, r);
+            writeln!(fo, "{}", sum);
+        }
+    }
 }
   
 pub unsafe fn solve_multi(fi: &mut FastInput<StdinLock>, fo: &mut BufWriter<StdoutLock>) {

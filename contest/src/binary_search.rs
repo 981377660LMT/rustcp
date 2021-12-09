@@ -42,7 +42,7 @@ pub fn first_true_float<T>(mut round: u8, mut l: T, mut r: T, f: &Box<dyn Fn(T) 
     l
 }
 
-pub fn last_true_float<T>(mut round: u8, mut l: T, mut r: T, f: &Box<dyn Fn(T) -> bool>) -> T 
+pub fn last_true_real<T>(mut round: u8, mut l: T, mut r: T, f: &Box<dyn Fn(T) -> bool>) -> T 
     where T: Real {
     while round > 0 {
         round -= 1;

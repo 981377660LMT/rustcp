@@ -1,4 +1,4 @@
-use crate::{algebraic_structure::Ring, num_integer::Integer};
+use crate::{algebraic_structure::Ring, num_integer::Integer, arithmetic::IdentityMul};
 
 ///
 /// 
@@ -18,7 +18,7 @@ pub fn pow<T, E>(x: T, n: E) -> T
 where T: Ring,
     E: Integer {
     if n == E::ZERO {
-        return T::mul_identity();
+        return <T as IdentityMul>::ONE;
     }
     let ans = pow(x, n >> E::ONE);
     let ans = ans * ans;

@@ -2,6 +2,21 @@ use std::ops::{BitAnd, BitOr, BitXor, Not, Rem, Shl, Shr};
 
 use crate::num_number::Number;
 
+///
+/// integer reprenstation
+/// 
+/// # Example
+/// 
+/// ```
+/// use contest::num_integer::*;
+/// 
+/// assert_eq!((-1i32).count_leading_zero(), 0);
+/// assert_eq!(0i32.count_leading_zero(), 32);
+/// assert_eq!(2i32.count_leading_zero(), 30);
+/// assert_eq!(10usize.count_trailing_zero(), 1);
+/// assert_eq!(11usize.count_trailing_zero(), 0);
+/// ```
+/// 
 pub trait Integer:
     Number
     + Rem<Output = Self>
@@ -16,7 +31,7 @@ pub trait Integer:
     type UnsignedType;
     const BITS: i32;
 
-    fn div_floor(mut a: Self, mut b: Self) -> Self {
+    fn div_floor(a: Self, b: Self) -> Self {
         let mut r = a / b;
         if r * b > a {
             if b > Self::ZERO {
@@ -27,7 +42,7 @@ pub trait Integer:
         }
         r
     }
-    fn div_ceil(mut a: Self, mut b: Self) -> Self {
+    fn div_ceil(a: Self, b: Self) -> Self {
         let mut r = a / b;
         if r * b < a {
             if b > Self::ZERO {
@@ -43,6 +58,7 @@ pub trait Integer:
     fn lowest_set_bit(&self) -> Self;
     fn higest_one_bit(&self) -> Self;
     fn count_leading_zero(&self) -> i32;
+    fn count_trailing_zero(&self) -> i32;
     fn modular(a: Self, m: Self) -> Self {
         let res = a % m;
         if res.is_negative() {
@@ -116,7 +132,14 @@ macro_rules! Generator {
             type HighPrecisionType = $h;
             type UnsignedType = $u;
             const BITS: i32 = <$t>::BITS as i32;
-            
+            fn count_trailing_zero(&self) -> i32 { 
+                let x = 0;
+                if *self == <$t as Number>::ZERO {
+                    <Self as Integer>::BITS
+                } else {
+                    <Self as Integer>::BITS - 1 - self.lowest_set_bit().count_leading_zero()
+                }
+            }
             fn bit_signed_right_shift(&self, step: i32) -> Self{
                 if step >= <Self as Integer>::BITS {
                     if self.is_negative() {

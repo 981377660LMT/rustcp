@@ -4,12 +4,7 @@ use std::{
     ops::{Add, Div, Mul, Sub},
 };
 
-use crate::{
-    algebraic_structure::*,
-    num_gcd::inv_mod,
-    num_integer::Integer,
-    num_number::Number,
-};
+use crate::{algebraic_structure::*, arithmetic::*, num_gcd::inv_mod, num_integer::Integer};
 
 macro_rules! ModulusGenerator {
     ($n: ident, $t: ty, $m: expr, $r: expr) => {
@@ -27,8 +22,9 @@ macro_rules! ModulusGenerator {
         }
     };
 }
+pub(crate) use ModulusGenerator;
 
-pub trait Modulus<T>
+pub trait Modulus<T>: Clone + Copy
 where
     T: Integer,
 {
@@ -44,6 +40,7 @@ where
     const PRIME_ROOT: T;
 }
 
+#[derive(Clone, Copy)]
 struct Quotient<T, M>
 where
     T: Integer,
@@ -64,35 +61,15 @@ where
             phantom: PhantomData,
         }
     }
-    fn value(&self) -> T {
+    pub fn value(&self) -> T {
         self.v
     }
-    fn possible_inv(&self) -> Option<Quotient<T, M>> {
+    pub fn possible_inv(&self) -> Option<Quotient<T, M>> {
         match inv_mod(self.v, M::MOD) {
             Some(x) => Some(Self::new(x)),
             None => None,
         }
     }
-}
-
-impl<T, M> Clone for Quotient<T, M>
-where
-    T: Integer,
-    M: Modulus<T>,
-{
-    fn clone(&self) -> Self {
-        Self {
-            v: self.v.clone(),
-            phantom: self.phantom.clone(),
-        }
-    }
-}
-
-impl<T, M> Copy for Quotient<T, M>
-where
-    T: Integer,
-    M: Modulus<T>,
-{
 }
 
 impl<T, M> Display for Quotient<T, M>
@@ -181,75 +158,7 @@ where
     }
 }
 
-impl<T, M> Magma for Quotient<T, M>
-where
-    T: Integer,
-    M: Modulus<T>,
-{
-}
-impl<T, M> Semigroup for Quotient<T, M>
-where
-    T: Integer,
-    M: Modulus<T>,
-{
-}
-
-impl<T, M> Monoid for Quotient<T, M>
-where
-    T: Integer,
-    M: Modulus<T>,
-{
-    fn add_identity() -> Self {
-        Self::new(M::ZERO)
-    }
-}
-
-impl<T, M> Group for Quotient<T, M>
-where
-    T: Integer,
-    M: Modulus<T>,
-{
-    fn add_inv(&self) -> Self {
-        if (self.v == M::ZERO) {
-            Self::new(M::ZERO)
-        } else {
-            Self::new(M::MOD - self.v)
-        }
-    }
-}
-
-impl<T, M> AbelianGroup for Quotient<T, M>
-where
-    T: Integer,
-    M: Modulus<T>,
-{
-}
-
-impl<T, M> Ring for Quotient<T, M>
-where
-    T: Integer,
-    M: Modulus<T>,
-{
-    fn mul_identity() -> Self {
-        Self::new(M::ONE)
-    }
-}
-
-impl<T, M> CommutativeRing for Quotient<T, M>
-where
-    T: Integer,
-    M: Modulus<T>,
-{
-}
-
-impl<T, M> IntegralDomain for Quotient<T, M>
-where
-    T: Integer,
-    M: PrimeModulus<T>,
-{
-}
-
-impl<T, M> Field for Quotient<T, M>
+impl<T, M> Quotient<T, M>
 where
     T: Integer,
     M: PrimeModulus<T>,
@@ -257,4 +166,55 @@ where
     fn mul_inv(&self) -> Self {
         Self::new(inv_mod(self.v, M::MOD).unwrap())
     }
+}
+
+impl<T, M> CommutativeAdd for Quotient<T, M>
+where
+    T: Integer,
+    M: Modulus<T>,
+{
+}
+
+impl<T, M> AssociativeAdd for Quotient<T, M>
+where
+    T: Integer,
+    M: Modulus<T>,
+{
+}
+
+impl<T, M> IdentityAdd for Quotient<T, M>
+where
+    T: Integer,
+    M: Modulus<T>,
+{
+    const ZERO: Self = Self{v: M::ZERO, phantom: PhantomData};
+}
+
+impl<T, M> CommutativeMul for Quotient<T, M>
+where
+    T: Integer,
+    M: Modulus<T>,
+{
+}
+
+impl<T, M> AssociativeMul for Quotient<T, M>
+where
+    T: Integer,
+    M: Modulus<T>,
+{
+}
+
+impl<T, M> IdentityMul for Quotient<T, M>
+where
+    T: Integer,
+    M: Modulus<T>,
+{
+    const ONE: Self = Self{v: M::ONE, phantom: PhantomData};
+}
+
+impl<T, M> IntegralMul for Quotient<T, M>
+where
+    T: Integer,
+    M: PrimeModulus<T>,
+{
 }

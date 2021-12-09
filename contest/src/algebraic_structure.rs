@@ -1,156 +1,100 @@
 use std::ops::{Add, Div, Mul, Sub};
 
-use crate::{num_integer::Integer, num_number::Number, num_real::Real};
-
+use crate::{
+    arithmetic::*
+};
+///
+/// for any a, b in S, a + b in S
 ///
 /// # Reference
 ///
 /// [magma](https://en.wikipedia.org/wiki/Magma_(algebra))
 ///
-/// 
-///
-/// for any a, b in S, a + b in S
-///
 pub trait Magma: Add<Output = Self> + Copy + PartialEq {}
+impl<T> Magma for T 
+where T: Add<Output = Self> + Copy + PartialEq {}
+///
+/// for any a, b, c in S, (a+b)+c=a+(b+c)
 ///
 /// # Reference
 ///
 /// [semigroup](https://en.wikipedia.org/wiki/Semigroup)
 ///
-/// 
 ///
-/// for any a, b, c in S, (a+b)+c=a+(b+c)
+pub trait Semigroup: Magma + AssociativeAdd {}
+impl<T> Semigroup for T 
+where T: Magma + AssociativeAdd{}
 ///
-pub trait Semigroup: Magma {}
-
+///
+/// there is a identity element 0 in S that for any x in S, x+0=0+x=x
 ///
 /// # Reference
 ///
 /// [monoid](https://en.wikipedia.org/wiki/Monoid)
 ///
-/// 
+pub trait Monoid: Semigroup + IdentityAdd {}
+impl<T> Monoid for T 
+where T: Semigroup + IdentityAdd{}
 ///
-/// there is a identity element 0 in S that for any x in S, x+0=0+x=x
-///
-pub trait Monoid: Semigroup {
-    fn add_identity() -> Self;
-}
-
+/// for any x in S, -x in S is always satified, that x+(-x)=(-x)+x=0
 ///
 /// # Reference
 ///
 /// [group](https://en.wikipedia.org/wiki/Group_(mathematics)#Definition)
+pub trait Group: Monoid + Sub<Output = Self> {}
+impl<T> Group for T 
+where T: Monoid + Sub<Output = Self>{}
 ///
-/// 
 ///
-/// for any x in S, -x in S is always satified, that x+(-x)=(-x)+x=0
-///  
-pub trait Group: Monoid + Sub<Output = Self> {
-    fn add_inv(&self) -> Self;
-}
-
+/// for any a, b in S, a+b=b+a
 ///
 /// # Reference
 ///
 /// [abelian group](https://en.wikipedia.org/wiki/Abelian_group)
 ///
-/// 
-///
-/// for any a, b in S, a+b=b+a
-///  
-pub trait AbelianGroup: Group {}
-
-///
-/// # Reference
-///
-/// [ring](https://en.wikipedia.org/wiki/Ring_(mathematics)#Some_properties)
-///
-/// 
+pub trait AbelianGroup: Group + CommutativeAdd {}
+impl<T> AbelianGroup for T 
+where T: Group + CommutativeAdd {}
 ///
 /// (S,+) is semigroup and (S,\*) is monoid, and
 ///
 /// - a \* (b + c) = (a \* b) + (a \* c) (left distributivity)
 /// - (a + b) \* c = (a \* c) + (b \* c) (right distributivity)
-///  
-pub trait Ring: AbelianGroup + Mul<Output = Self> {
-    fn mul_identity() -> Self;
-}
+///
+/// # Reference
+///
+/// [ring](https://en.wikipedia.org/wiki/Ring_(mathematics)#Some_properties)
+///
+pub trait Ring: AbelianGroup + Mul<Output = Self> + IdentityMul {}
+impl<T> Ring for T 
+where T: AbelianGroup + Mul<Output = Self> + IdentityMul {}
+///
+/// for any a, b in S, a \* b = b \* a
 ///
 /// # Reference
 ///
 /// [commutative ring](https://en.wikipedia.org/wiki/Commutative_ring)
-///
-/// 
-///
-/// for any a, b in S, a \* b = b \* a
 ///  
-pub trait CommutativeRing: Ring {}
+pub trait CommutativeRing: Ring + CommutativeMul {}
+impl<T> CommutativeRing for T 
+where T: Ring + CommutativeMul {}
+///
+/// for any nonzero value a, b in S, a \* b != 0
 ///
 /// # Reference
 ///
 /// [integral domain](https://en.wikipedia.org/wiki/Commutative_ring)
 ///
-/// 
+pub trait IntegralDomain: CommutativeRing + IntegralMul {}
+impl<T> IntegralDomain for T 
+where T: CommutativeRing + IntegralMul {}
 ///
-/// for any nonzero value a, b in S, a \* b != 0
-///
-pub trait IntegralDomain: CommutativeRing {}
+/// for any nonzero value x in S, there is a number y that x * y = 1 and y * x = 1
 ///
 /// # Reference
 ///
 /// [field](https://en.wikipedia.org/wiki/Field_(mathematics))
 ///
-/// 
-///
-/// for any nonzero value a, b in S, a \* b != 0
-///
-pub trait Field: IntegralDomain + Div<Output = Self> {
-    fn mul_inv(&self) -> Self;
-}
-
-/**
- * Implement CommutativeRing for number type
- */
-impl<T> CommutativeRing for T where T: Number {}
-impl<T> Ring for T
-where
-    T: Number,
-{
-    fn mul_identity() -> Self {
-        T::ONE
-    }
-}
-impl<T> AbelianGroup for T where T: Number {}
-impl<T> Group for T
-where
-    T: Number,
-{
-    fn add_inv(&self) -> Self {
-        self.negative()
-    }
-}
-impl<T> Monoid for T
-where
-    T: Number,
-{
-    fn add_identity() -> Self {
-        Self::ZERO
-    }
-}
-impl<T> Semigroup for T where T: Number {}
-impl<T> Magma for T where T: Number {}
-
-
-/**
- * Implement field for real type
- */
+pub trait Field: IntegralDomain + Div<Output = Self> {}
 impl<T> Field for T 
-where T: Real {
-    fn mul_inv(&self) -> Self {
-        Self::ONE / *self
-    }
-}
-impl<T> IntegralDomain for T 
-where T: Real {
-}
-
+where T: IntegralDomain + Div<Output = Self> {}

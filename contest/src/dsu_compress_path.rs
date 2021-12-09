@@ -1,6 +1,6 @@
 use std::mem::swap;
 
-use crate::{algebraic_structure::{Semigroup, Group}, algebraic_structure_nil};
+use crate::{algebraic_structure::{Group}, arithmetic::{CommutativeAdd, IdentityAdd, Nil}};
 
 ///
 /// 
@@ -10,7 +10,8 @@ use crate::{algebraic_structure::{Semigroup, Group}, algebraic_structure_nil};
 /// # Example
 /// 
 /// ```
-/// use contest::{algebraic_structure::{Semigroup, Group}, algebraic_structure_nil::*, dsu_compress_path::*};
+/// use contest::{algebraic_structure::{Semigroup, Group, Monoid}, arithmetic::{CommutativeAdd, IdentityAdd, Nil}};
+/// use contest::dsu_compress_path::*;
 /// let mut dsu = DSU::new(vec![Nil; 5]);
 /// assert!(dsu.find(0usize) != dsu.find(1usize));
 /// dsu.union(0usize, 1usize, Nil);
@@ -21,8 +22,8 @@ use crate::{algebraic_structure::{Semigroup, Group}, algebraic_structure_nil};
 /// assert!(dsu.find(0usize) == dsu.find(3usize));
 /// ```
 /// 
-pub struct DSU<T = algebraic_structure_nil::Nil, R = algebraic_structure_nil::Nil> 
-where T: Semigroup,
+pub struct DSU<T = Nil, R = Nil> 
+where T: CommutativeAdd,
     R: Group
 {
     p: Vec<usize>,
@@ -32,7 +33,7 @@ where T: Semigroup,
 }
 
 impl<T, R> DSU<T, R>
-where T: Semigroup,
+where T: CommutativeAdd,
     R: Group, 
     {
     pub fn new(weight: Vec<T>) -> Self {
@@ -41,7 +42,7 @@ where T: Semigroup,
             p: (0..n).into_iter().collect(),
             size: vec![1; n],
             sum: weight,
-            path_to_root: vec![R::add_identity(); n]
+            path_to_root: vec![<R as IdentityAdd>::ZERO; n]
         }
     }
     pub fn find(&mut self, root: usize) -> usize {
@@ -89,7 +90,7 @@ where T: Semigroup,
         if self.size[c] < self.size[d] {
             swap(&mut c, &mut d);
         } else {
-            delta = delta.add_inv();
+            delta = <R as IdentityAdd>::ZERO - delta;
         }
         self.sum[c] = self.sum[c] + self.sum[d];
         self.size[c] = self.size[c] + self.size[d];

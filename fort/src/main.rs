@@ -366,6 +366,153 @@ pub mod num_number {
     Generator!(f32);
     Generator!(f64);
 }
+pub mod num_real {
+    use crate::num_number::Number;
+
+    pub trait Real: Number {
+        fn average(a: Self, b: Self) -> Self {
+            (a + b) / Self::from_i8(2)
+        }
+    }
+}
+pub mod arithmetic {
+    use crate::num_number::Number;
+    use crate::num_real::Real;
+    use std::fmt::Debug;
+    use std::ops::Add;
+    use std::ops::Div;
+    use std::ops::Mul;
+    use std::ops::Sub;
+
+    pub trait CommutativeAdd: Add<Output = Self> + Copy + Debug {}
+    pub trait AssociativeAdd: Add<Output = Self> + Copy + Debug {}
+    pub trait IdentityAdd: Add<Output = Self> + Copy + Debug {
+        const ZERO: Self;
+    }
+    pub trait CommutativeMul: Mul<Output = Self> + Copy + Debug {}
+    pub trait AssociativeMul: Mul<Output = Self> + Copy + Debug {}
+    pub trait IdentityMul: Mul<Output = Self> + Copy + Debug {
+        const ONE: Self;
+    }
+    pub trait IdempotentAdd: CommutativeAdd + AssociativeAdd {}
+    pub trait IdempotentMul: CommutativeMul + AssociativeMul {}
+    pub trait IntegralMul: Mul<Output = Self> + Copy + Debug {}
+    macro_rules! AddGenerator {
+        ($t: ty, $zero: expr) => {
+            impl CommutativeAdd for $t {}
+            impl IdentityAdd for $t {
+                const ZERO: Self = $zero;
+            }
+            impl IdempotentAdd for $t {}
+            impl AssociativeAdd for $t {}
+        };
+    }
+
+    macro_rules! MulGenerator {
+        ($t: ty, $one: expr) => {
+            impl CommutativeMul for $t {}
+            impl IdentityMul for $t {
+                const ONE: Self = $one;
+            }
+            impl IdempotentMul for $t {}
+            impl AssociativeMul for $t {}
+            impl IntegralMul for $t {}
+        };
+    }
+
+    macro_rules! AllGenerator {
+        ($t: ty, $zero: expr, $one: expr) => {
+            AddGenerator!($t, $zero);
+            MulGenerator!($t, $one);
+        };
+    }
+
+    impl<T> CommutativeAdd for T where T: Number {}
+    impl<T> IdentityAdd for T
+    where
+        T: Number,
+    {
+        const ZERO: Self = <T as Number>::ZERO;
+    }
+    impl<T> AssociativeAdd for T where T: Number {}
+    impl<T> CommutativeMul for T where T: Number {}
+    impl<T> IdentityMul for T
+    where
+        T: Number,
+    {
+        const ONE: Self = <T as Number>::ONE;
+    }
+    impl<T> AssociativeMul for T where T: Number {}
+    impl<T> IntegralMul for T where T: Real {}
+
+    #[derive(Clone, Copy, Debug)]
+    pub struct Nil;
+    impl Mul for Nil {
+        type Output = Nil;
+
+        fn mul(self, rhs: Nil) -> Self::Output {
+            Nil
+        }
+    }
+    impl Add for Nil {
+        type Output = Nil;
+
+        fn add(self, rhs: Nil) -> Self::Output {
+            Nil
+        }
+    }
+    impl Sub for Nil {
+        type Output = Nil;
+
+        fn sub(self, rhs: Nil) -> Self::Output {
+            Nil
+        }
+    }
+
+    impl Div for Nil {
+        type Output = Nil;
+
+        fn div(self, rhs: Nil) -> Self::Output {
+            Nil
+        }
+    }
+    impl PartialEq for Nil {
+        fn eq(&self, other: &Self) -> bool {
+            true
+        }
+    }
+    impl Eq for Nil {}
+    AllGenerator!(Nil, Nil, Nil);
+    pub(crate) use AddGenerator;
+    pub(crate) use AllGenerator;
+    pub(crate) use MulGenerator;
+}
+pub mod algebraic_structure {
+    use crate::arithmetic::*;
+    use std::ops::Add;
+    use std::ops::Div;
+    use std::ops::Mul;
+    use std::ops::Sub;
+
+    pub trait Magma: Add<Output = Self> + Copy + PartialEq {}
+    impl<T> Magma for T where T: Add<Output = Self> + Copy + PartialEq {}
+    pub trait Semigroup: Magma + AssociativeAdd {}
+    impl<T> Semigroup for T where T: Magma + AssociativeAdd {}
+    pub trait Monoid: Semigroup + IdentityAdd {}
+    impl<T> Monoid for T where T: Semigroup + IdentityAdd {}
+    pub trait Group: Monoid + Sub<Output = Self> {}
+    impl<T> Group for T where T: Monoid + Sub<Output = Self> {}
+    pub trait AbelianGroup: Group + CommutativeAdd {}
+    impl<T> AbelianGroup for T where T: Group + CommutativeAdd {}
+    pub trait Ring: AbelianGroup + Mul<Output = Self> + IdentityMul {}
+    impl<T> Ring for T where T: AbelianGroup + Mul<Output = Self> + IdentityMul {}
+    pub trait CommutativeRing: Ring + CommutativeMul {}
+    impl<T> CommutativeRing for T where T: Ring + CommutativeMul {}
+    pub trait IntegralDomain: CommutativeRing + IntegralMul {}
+    impl<T> IntegralDomain for T where T: CommutativeRing + IntegralMul {}
+    pub trait Field: IntegralDomain + Div<Output = Self> {}
+    impl<T> Field for T where T: IntegralDomain + Div<Output = Self> {}
+}
 pub mod num_integer {
     use crate::num_number::Number;
     use std::ops::BitAnd;
@@ -390,7 +537,7 @@ pub mod num_integer {
         type UnsignedType;
         const BITS: i32;
 
-        fn div_floor(mut a: Self, mut b: Self) -> Self {
+        fn div_floor(a: Self, b: Self) -> Self {
             let mut r = a / b;
             if r * b > a {
                 if b > Self::ZERO {
@@ -401,7 +548,7 @@ pub mod num_integer {
             }
             r
         }
-        fn div_ceil(mut a: Self, mut b: Self) -> Self {
+        fn div_ceil(a: Self, b: Self) -> Self {
             let mut r = a / b;
             if r * b < a {
                 if b > Self::ZERO {
@@ -417,6 +564,7 @@ pub mod num_integer {
         fn lowest_set_bit(&self) -> Self;
         fn higest_one_bit(&self) -> Self;
         fn count_leading_zero(&self) -> i32;
+        fn count_trailing_zero(&self) -> i32;
         fn modular(a: Self, m: Self) -> Self {
             let res = a % m;
             if res.is_negative() {
@@ -488,7 +636,14 @@ pub mod num_integer {
                 type HighPrecisionType = $h;
                 type UnsignedType = $u;
                 const BITS: i32 = <$t>::BITS as i32;
-
+                fn count_trailing_zero(&self) -> i32 {
+                    let x = 0;
+                    if *self == <$t as Number>::ZERO {
+                        <Self as Integer>::BITS
+                    } else {
+                        <Self as Integer>::BITS - 1 - self.lowest_set_bit().count_leading_zero()
+                    }
+                }
                 fn bit_signed_right_shift(&self, step: i32) -> Self {
                     if step >= <Self as Integer>::BITS {
                         if self.is_negative() {
@@ -571,184 +726,95 @@ pub mod num_integer {
     Generator!(i128, i128, u128);
     Generator!(u128, u128, u128);
 }
-pub mod num_real {
-    use crate::num_number::Number;
-
-    pub trait Real: Number {
-        fn average(a: Self, b: Self) -> Self {
-            (a + b) / Self::from_i8(2)
-        }
-    }
-}
-pub mod algebraic_structure {
+pub mod fenwick_tree {
+    use crate::algebraic_structure::Group;
+    use crate::algebraic_structure::Monoid;
+    use crate::arithmetic::IdentityAdd;
     use crate::num_integer::Integer;
-    use crate::num_number::Number;
-    use crate::num_real::Real;
-    use std::ops::Add;
-    use std::ops::Div;
-    use std::ops::Mul;
-    use std::ops::Sub;
+    use std::cmp::min;
+    use std::fmt::Debug;
 
-    pub trait Magma: Add<Output = Self> + Copy + PartialEq {}
-    pub trait Semigroup: Magma {}
-
-    pub trait Monoid: Semigroup {
-        fn add_identity() -> Self;
-    }
-
-    pub trait Group: Monoid + Sub<Output = Self> {
-        fn add_inv(&self) -> Self;
-    }
-
-    pub trait AbelianGroup: Group {}
-
-    pub trait Ring: AbelianGroup + Mul<Output = Self> {
-        fn mul_identity() -> Self;
-    }
-    pub trait CommutativeRing: Ring {}
-    pub trait IntegralDomain: CommutativeRing {}
-    pub trait Field: IntegralDomain + Div<Output = Self> {
-        fn mul_inv(&self) -> Self;
-    }
-
-    impl<T> CommutativeRing for T where T: Number {}
-    impl<T> Ring for T
+    #[derive(Debug, Clone)]
+    pub struct FenwickTree<T>
     where
-        T: Number,
+        T: Debug + Monoid,
     {
-        fn mul_identity() -> Self {
-            T::ONE
+        data: Vec<T>,
+    }
+
+    impl<T> FenwickTree<T>
+    where
+        T: Debug + Monoid,
+    {
+        pub fn new(n: usize) -> Self {
+            FenwickTree {
+                data: vec![<T as IdentityAdd>::ZERO; n + 1],
+            }
         }
-    }
-    impl<T> AbelianGroup for T where T: Number {}
-    impl<T> Group for T
-    where
-        T: Number,
-    {
-        fn add_inv(&self) -> Self {
-            self.negative()
+        pub fn with_initial_value(data: &[T]) -> Self {
+            let n = data.len();
+            let mut res = Self::new(n);
+            for i in 0..n {
+                res.data[i + 1] = data[i];
+            }
+            for i in 1..(n + 1) {
+                let to = i + i.lowest_set_bit();
+                if to <= n {
+                    res.data[to] = res.data[to] + res.data[i];
+                }
+            }
+            res
         }
-    }
-    impl<T> Monoid for T
-    where
-        T: Number,
-    {
-        fn add_identity() -> Self {
-            Self::ZERO
-        }
-    }
-    impl<T> Semigroup for T where T: Number {}
-    impl<T> Magma for T where T: Number {}
 
-    impl<T> Field for T
-    where
-        T: Real,
-    {
-        fn mul_inv(&self) -> Self {
-            Self::ONE / *self
+        pub fn clear(&mut self) {
+            self.data.fill(<T as IdentityAdd>::ZERO);
         }
-    }
-    impl<T> IntegralDomain for T where T: Real {}
-}
-pub mod math {
-    use crate::algebraic_structure::Ring;
-    use crate::num_integer::Integer;
 
-    pub fn pow<T, E>(x: T, n: E) -> T
-    where
-        T: Ring,
-        E: Integer,
-    {
-        if n == E::ZERO {
-            return T::mul_identity();
+        pub fn update(&mut self, i: usize, u: T) {
+            let mut i = i + 1;
+            if i <= 0 {
+                return;
+            }
+            while i < self.data.len() {
+                self.data[i] = self.data[i] + u;
+                i = i + i.lowest_set_bit();
+            }
         }
-        let ans = pow(x, n >> E::ONE);
-        let ans = ans * ans;
-        if (n & E::ONE) == E::ONE {
-            ans * x
-        } else {
-            ans
-        }
-    }
 
-    pub fn log2_floor<T>(x: T) -> i32
-    where
-        T: Integer,
-    {
-        let leading_zero = x.count_leading_zero();
-        T::BITS - leading_zero - 1
-    }
-    pub fn log2_ceil<T>(x: T) -> i32
-    where
-        T: Integer,
-    {
-        let res = log2_floor(x);
-        if res < 0 || (T::ONE << T::from_i32(res)) < x {
-            res + 1
-        } else {
+        pub fn query(&self, i: usize) -> T {
+            let mut i = min(i + 1, self.data.len() - 1);
+            let mut res = <T as IdentityAdd>::ZERO;
+            while i > 0 {
+                res = res + self.data[i];
+                i = i - i.lowest_set_bit();
+            }
             res
         }
     }
-}
-pub mod sparse_table {
-    use crate::math::log2_floor;
-    use crate::util::should;
-    use crate::util::should_eq;
-    use std::fmt;
-    use std::fmt::Display;
 
-    #[derive(Debug)]
-    pub struct SparseTable<'a, T> {
-        data: Vec<Vec<&'a T>>,
-        f: fn(&'a T, &'a T) -> &'a T,
-    }
-
-    impl<'a, T> SparseTable<'a, T> {
-        pub fn new(s: &'a [T], f: fn(&'a T, &'a T) -> &'a T) -> Self {
-            let n = s.len();
-            if n == 0 {
-                return Self {
-                    data: Vec::new(),
-                    f,
-                };
+    impl<T> FenwickTree<T>
+    where
+        T: Debug + Group,
+    {
+        pub fn query_range(&self, l: usize, r: usize) -> T {
+            if l > r {
+                return <T as IdentityAdd>::ZERO;
             }
-            let level = (log2_floor(n) + 1) as usize;
-            let mut data: Vec<Vec<&'a T>> = vec![vec![&s[0]; n]; level];
-            for i in 0..n {
-                data[0][i] = &s[i];
-            }
-
-            for i in 1..level {
-                let step = 1usize << (i - 1);
-                for j in 0..n {
-                    let k = j + step;
-                    if k < n {
-                        data[i][j] = f(data[i - 1][j], data[i - 1][k]);
-                    } else {
-                        data[i][j] = data[i - 1][j];
-                    }
-                }
-            }
-
-            Self { data, f }
-        }
-
-        pub fn query(&self, l: usize, r: usize) -> &'a T {
-            should!(l <= r);
-            let log = log2_floor(r - l + 1) as usize;
-            (self.f)(self.data[log][l], self.data[log][r + 1 - (1usize << log)])
+            self.query(r) - self.query(l - 1)
         }
     }
 }
 pub mod solver {
+    use crate::arithmetic::*;
     use crate::fast_input::FastInput;
-    use crate::sparse_table::SparseTable;
+    use crate::fenwick_tree::FenwickTree;
     use crate::util::debug;
     use std::cmp::min;
     use std::io::BufWriter;
     use std::io::StdinLock;
     use std::io::StdoutLock;
     use std::io::Write;
+    use std::ops::Add;
     use std::panic;
 
     pub unsafe fn solve_one(
@@ -758,17 +824,24 @@ pub mod solver {
     ) {
         let n = fi.ru();
         let q = fi.ru();
-        let mut v = Vec::with_capacity(n);
-        for i in 0..n {
-            v.push(fi.ri());
+        let mut a = Vec::with_capacity(n);
+        for _ in 0..n {
+            a.push(fi.rl());
         }
-        let st = debug!(SparseTable::new(&v[..], min));
-        for i in 0..q {
-            let l = fi.ru();
-            let r = fi.ru() - 1;
-            let (l, r) = debug!((l, r));
-            let ans = st.query(l, r);
-            writeln!(fo, "{}", ans);
+        let mut ft = FenwickTree::with_initial_value(&a);
+
+        for _ in 0..q {
+            let t = fi.ri();
+            if t == 0 {
+                let p = fi.ru();
+                let x = fi.rl();
+                ft.update(p, x);
+            } else {
+                let l = fi.ru();
+                let r = fi.ru() - 1;
+                let sum = ft.query_range(l, r);
+                writeln!(fo, "{}", sum);
+            }
         }
     }
 
@@ -782,13 +855,27 @@ pub mod solver {
 use crate::fast_input::FastInput;
 use crate::solver::solve_multi;
 use std::io::BufWriter;
+use std::thread;
+
+unsafe fn run_in_current_thread() {
+    let stdin = std::io::stdin();
+    let stdout = std::io::stdout();
+    let mut fi = FastInput::new(stdin.lock());
+    let mut fo = BufWriter::new(stdout.lock());
+    solve_multi(&mut fi, &mut fo);
+}
+unsafe fn run_in_new_thread() {
+    thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            run_in_current_thread();
+        })
+        .unwrap()
+        .join();
+}
 
 fn main() {
     unsafe {
-        let stdin = std::io::stdin();
-        let stdout = std::io::stdout();
-        let mut fi = FastInput::new(stdin.lock());
-        let mut fo = BufWriter::new(stdout.lock());
-        solve_multi(&mut fi, &mut fo);
+        run_in_current_thread();
     }
 }

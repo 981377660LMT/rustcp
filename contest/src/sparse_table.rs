@@ -1,6 +1,6 @@
 use std::fmt::{self, Display};
 
-use crate::{math::log2_floor, util::{should_eq, should}};
+use crate::{math::log2_floor, util::{should_eq, should}, algebraic_structure::{Monoid}, arithmetic::{CommutativeAdd, IdentityAdd, IdempotentAdd}};
 
 ///
 /// sparse table
@@ -9,45 +9,48 @@ use crate::{math::log2_floor, util::{should_eq, should}};
 /// 
 /// # Example
 /// 
-/// ```
-/// use contest::sparse_table::*;
-/// fn merge<'a>(x: &'a i32, y: &'a i32) -> &'a i32 {
-///     if (x < y) {
-///         y    
-///     } else {
-///         x
+/// ```ignore
+/// #[derive(Clone, Copy, Debug)]
+/// struct MinE(i32);
+/// impl Add for MinE {
+///     type Output = Self;
+/// 
+///     fn add(self, rhs: Self) -> Self::Output {
+///         MinE(min(self.0, rhs.0))
 ///     }
 /// }
-/// let data = [3, 1, 4, 2];
-/// let st = SparseTable::new(&data[..], merge);
+/// AddGenerator!(MinE, MinE(i32::MAX));
+///     
+/// let data = vec![MinE(3), MinE(1), MinE(4), MinE(2)];
+/// let st = SparseTable::new(&data);
 /// 
-/// assert_eq!(1, *st.query(1, 1));
-/// assert_eq!(3, *st.query(0, 1));
-/// assert_eq!(4, *st.query(1, 3));
+/// assert_eq!(1, st.query(1usize, 1usize).0);
+/// assert_eq!(3, st.query(0usize, 1usize).0);
+/// assert_eq!(4, st.query(1usize, 3usize).0);
 /// ```
 /// 
 #[derive(Debug)]
-pub struct SparseTable<'a, T> {
+pub struct SparseTable<T>
+where T: IdempotentAdd {
     ///
     /// data[i][j] cover [j, j+2^i)
     /// 
-    data: Vec<Vec<&'a T>>,
-    f: fn(&'a T, &'a T) -> &'a T,
+    data: Vec<Vec<T>>
 }
 
-impl<'a, T> SparseTable<'a, T> {
-    pub fn new(s: &'a [T], f: fn(&'a T, &'a T) -> &'a T) -> Self {
+impl<T> SparseTable<T> 
+where T: IdempotentAdd {
+    pub fn new(s: &[T]) -> Self {
         let n = s.len();
         if n == 0 {
             return Self {
-                data: Vec::new(),
-                f,
+                data: Vec::new()
             };
         }
         let level = (log2_floor(n) + 1) as usize;
-        let mut data: Vec<Vec<&'a T>> = vec![vec![&s[0]; n]; level];
+        let mut data: Vec<Vec<T>> = vec![vec![s[0]; n]; level];
         for i in 0..n {
-            data[0][i] = &s[i];
+            data[0][i] = s[i];
         }
 
         for i in 1..level {
@@ -55,7 +58,7 @@ impl<'a, T> SparseTable<'a, T> {
             for j in 0..n {
                 let k = j + step;
                 if k < n {
-                    data[i][j] = f(data[i - 1][j], data[i - 1][k]);
+                    data[i][j] = data[i - 1][j] + data[i - 1][k];
                 } else {
                     data[i][j] = data[i - 1][j];
                 }
@@ -63,14 +66,16 @@ impl<'a, T> SparseTable<'a, T> {
         }
 
         Self {
-            data,
-            f,
+            data
         }
     }
 
-    pub fn query(&self, l: usize, r: usize) -> &'a T {
+    ///
+    /// O(1) find the sum over data[l..r]
+    /// 
+    pub fn query(&self, l: usize, r: usize) -> T {
         should!(l <= r);
         let log = log2_floor(r - l + 1) as usize;
-        (self.f)(self.data[log][l], self.data[log][r + 1 - (1usize << log)])
+        self.data[log][l] + self.data[log][r + 1 - (1usize << log)]
     }
 }
