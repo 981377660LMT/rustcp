@@ -1,40 +1,34 @@
-use std::{io::{StdinLock, BufWriter, StdoutLock, Write}, panic, cmp::min, ops::Add, mem::swap};
-use crate::{fast_input::FastInput, util::debug, arithmetic::*, graph::SimpleDiEdge, root_tree::EulerTourTrace, range_minimum_query::RangeMinimumQuery};
-type E = SimpleDiEdge;
+use std::{io::{Write, BufRead}, panic};
+use std::ops::{Add, Sub, Mul, Div};
+use template::{fast_input::FastInput, affine::Affine, segtree::Segtree, function::Merger, arithmetic::IdentityMul, static_modint::{StaticModInt, MF998_244_353}, range_affine_range_sum::RangeAffineRangeSum};
+use template::arithmetic::IdentityAdd;
+use crate::contest_macro::{input, debug, MergerImpl, AddImpl};
 
-pub unsafe fn solve_one(test_id: u32, fi: &mut FastInput<StdinLock>, fo: &mut BufWriter<StdoutLock>) {
+type mi = StaticModInt<u32, MF998_244_353>; 
+
+pub unsafe fn solve_one<I: BufRead>(test_id: u32, fi: &mut FastInput<I>, fo: &mut impl Write) {
     let n = fi.ru();
-    let q = fi.ru();
-    let mut adj = vec![Vec::new(); n];
-    for i in 1..n {
-        let a = i;
-        let b = fi.ru();
-        adj[a].push(E::new(b));
-        adj[b].push(E::new(a));
-    }
-    let mut adj = debug!(adj);
-    let mut euler_tour = debug!(EulerTourTrace::new(&adj, |x| x == 0));
-    let rmq = RangeMinimumQuery::new(euler_tour.euler_trace.iter().map(|x| euler_tour.first_seen[*x])
-        .collect());
-    for _ in 0..q {
-        let u = fi.ru();
-        let v = fi.ru();
-        let (u, v) = debug!((u, v));
-        let mut l = euler_tour.first_seen[u];
-        let mut r = euler_tour.first_seen[v];
-        if l > r {
-            swap(&mut l, &mut r);
+        let q = fi.ru();
+        let mut data = Vec::with_capacity(n);
+        for _ in 0..n {
+            data.push(mi::new(fi.read()));
         }
-        let (l, r) = debug!((l, r));
-        let lca_order = rmq.query(l, r);
-        let lca = euler_tour.euler_trace[lca_order];
-        writeln!(fo, "{}", lca);
-    }
+        let mut rars = RangeAffineRangeSum::new(0, n - 1, &|x| data[x]);
+        for i in 0..q {
+            let t = fi.ri();
+            let l = fi.ru();
+            let r = fi.ru() - 1;
+            if t == 0 {
+                rars.update(l, r, mi::new(fi.read()), mi::new(fi.read()));
+            } else {
+                let sum = rars.query(l, r);
+                writeln!(fo, "{}", sum);
+            }
+        }
 }
-  
-pub unsafe fn solve_multi(fi: &mut FastInput<StdinLock>, fo: &mut BufWriter<StdoutLock>) {
+pub unsafe fn solve_multi<I: BufRead>(fi: &mut FastInput<I>, fo: &mut impl Write) {
     let t: u32 = 1;//fi.read();
-    for test_id in 1 .. t + 1 {
-        solve_one(test_id, fi, fo);
+    for test_id in 1 .. t + 1 { 
+        solve_one(test_id, fi, fo); 
     }
 }

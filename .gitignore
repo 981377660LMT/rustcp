@@ -3,3 +3,4 @@ ac-library-rs/*
 .vscode/*
 contest/target/*
 fort/target/*
+leetcode/target/*

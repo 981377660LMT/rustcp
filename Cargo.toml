@@ -1,11 +1,14 @@
 [workspace]
 
 members = [
-    "contest"
+    "contest",
+    "template",
 ]
 
 exclude = [
-    "fort"
+    "fort",
+    "ac-library-rs",
+    "leetcode",
 ]
 
 [profile.dev]

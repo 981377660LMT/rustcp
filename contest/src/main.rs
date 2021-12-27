@@ -1,6 +1,8 @@
 use std::{io::BufWriter, thread};
-use contest::{fast_input::FastInput, solver::solve_multi};
 
+use contest::{solver::solve_multi, stress::stress};
+use template::fast_input::FastInput;
+#[allow(dead_code)]
 unsafe fn run_in_current_thread() {
     let stdin = std::io::stdin();
     let stdout = std::io::stdout();
@@ -8,6 +10,8 @@ unsafe fn run_in_current_thread() {
     let mut fo = BufWriter::new(stdout.lock());
     solve_multi(&mut fi, &mut fo);
 }
+
+#[allow(dead_code)]
 unsafe fn run_in_new_thread() {
     thread::Builder::new()
     .stack_size(256 << 20)
@@ -15,9 +19,16 @@ unsafe fn run_in_new_thread() {
     .unwrap()
     .join();
 }
-
+#[cfg(not(feature = "stress"))]
 fn main() {
     unsafe {
         run_in_current_thread();
+    }
+}
+
+#[cfg(feature = "stress")]
+fn main() {
+    unsafe {
+        stress();
     }
 }
