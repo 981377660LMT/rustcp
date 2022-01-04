@@ -2,13 +2,13 @@
 
 members = [
     "contest",
-    "template",
 ]
 
 exclude = [
     "fort",
     "ac-library-rs",
     "leetcode",
+    "lazy-static"
 ]
 
 [profile.dev]

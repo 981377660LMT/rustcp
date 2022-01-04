@@ -1,6 +1,6 @@
 use std::{io::{BufRead, Write}, mem::swap};
 
-use template::{fast_input::FastInput, rand::Rng};
+use crate::{fast_input::FastInput, rand::Rng};
 
 
 pub unsafe fn brute_force<InT>(fi: &mut FastInput<InT>, fo: &mut impl Write)

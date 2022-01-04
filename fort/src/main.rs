@@ -639,7 +639,7 @@ use crate::stress::stress;
 use std::io::BufWriter;
 use std::thread;
 
-#[allow(dead_code)]
+
 unsafe fn run_in_current_thread() {
     let stdin = std::io::stdin();
     let stdout = std::io::stdout();
@@ -648,7 +648,7 @@ unsafe fn run_in_current_thread() {
     solve_multi(&mut fi, &mut fo);
 }
 
-#[allow(dead_code)]
+
 unsafe fn run_in_new_thread() {
     thread::Builder::new()
         .stack_size(256 << 20)

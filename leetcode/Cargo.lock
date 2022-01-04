@@ -3,17 +3,12 @@
 version = 3
 
 [[package]]
-name = "ac-library-rs"
+name = "contest"
 version = "0.1.0"
 
 [[package]]
 name = "leetcode"
 version = "0.1.0"
 dependencies = [
- "ac-library-rs",
- "template",
+ "contest",
 ]
-
-[[package]]
-name = "template"
-version = "0.1.0"

@@ -3,17 +3,5 @@
 version = 3
 
 [[package]]
-name = "ac-library-rs"
-version = "0.1.0"
-
-[[package]]
 name = "contest"
-version = "0.1.0"
-dependencies = [
- "ac-library-rs",
- "template",
-]
-
-[[package]]
-name = "template"
 version = "0.1.0"

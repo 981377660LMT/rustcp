@@ -1,34 +1,31 @@
 use std::{io::{Write, BufRead}, panic};
 use std::ops::{Add, Sub, Mul, Div};
-use template::{fast_input::FastInput, affine::Affine, segtree::Segtree, function::Merger, arithmetic::IdentityMul, static_modint::{StaticModInt, MF998_244_353}, range_affine_range_sum::RangeAffineRangeSum};
-use template::arithmetic::IdentityAdd;
-use crate::contest_macro::{input, debug, MergerImpl, AddImpl};
+use crate::{fast_input::FastInput, static_modint::{StaticModInt, MF998244353}, vector_matrix::Matrix};
+use crate::macros::input;
+use crate::arithmetic::*;
+use crate::algebraic_structure::*;
 
-type mi = StaticModInt<u32, MF998_244_353>; 
+type mi = StaticModInt<i32, MF998244353>;
 
-pub unsafe fn solve_one<I: BufRead>(test_id: u32, fi: &mut FastInput<I>, fo: &mut impl Write) {
+pub unsafe fn solve_one<I: BufRead>(test_id: usize, fi: &mut FastInput<I>, fo: &mut impl Write) {
     let n = fi.ru();
-        let q = fi.ru();
-        let mut data = Vec::with_capacity(n);
-        for _ in 0..n {
-            data.push(mi::new(fi.read()));
-        }
-        let mut rars = RangeAffineRangeSum::new(0, n - 1, &|x| data[x]);
-        for i in 0..q {
-            let t = fi.ri();
-            let l = fi.ru();
-            let r = fi.ru() - 1;
-            if t == 0 {
-                rars.update(l, r, mi::new(fi.read()), mi::new(fi.read()));
-            } else {
-                let sum = rars.query(l, r);
-                writeln!(fo, "{}", sum);
+    let mat: Vec<mi> = (0..n*n).map(|_| fi.r()).collect();
+    let mat = Matrix::with_initial_value(mat, n, n);
+    if let Some(inv) = mat.possible_inv() {
+        for i in 0..n {
+            for j in 0..n {
+                write!(fo, "{} ", inv[(i, j)]);
             }
+            writeln!(fo);
         }
+    } else {
+        writeln!(fo, "-1");
+    }
 }
+  
 pub unsafe fn solve_multi<I: BufRead>(fi: &mut FastInput<I>, fo: &mut impl Write) {
-    let t: u32 = 1;//fi.read();
-    for test_id in 1 .. t + 1 { 
-        solve_one(test_id, fi, fo); 
+    let t: usize = 1;//fi.read();
+    for test_id in 1 ..= t {
+        solve_one(test_id, fi, fo);
     }
 }

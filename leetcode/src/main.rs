@@ -1,18 +1,13 @@
-use template::permutation::next_permutation;
+use contest::{math::pow, num_float::float, num_number::{FromNumber, Number}};
 impl Solution {
-    pub fn permute_unique(nums: Vec<i32>) -> Vec<Vec<i32>> {
-        let mut nums = nums;
-        nums.sort();
-        let mut res = Vec::new();
-
-        loop {
-            res.push(nums.clone());
-            if !next_permutation(&mut nums) {
-                break;
-            }
+    pub fn my_pow(x: f64, n: i32) -> f64 {
+        let mut n = n as i64;
+        let mut x:float = FromNumber::from(x);
+        if n < 0 {
+            x = float::ONE / x;
+            n = -n;
         }
-
-        res
+        pow(x, n).as_f64()
     }
 }
 

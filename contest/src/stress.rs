@@ -1,6 +1,6 @@
 use std::{io::{Write, BufReader, Cursor}, fmt::Display};
 
-use template::{fast_input::FastInput, rand::{Rng, rng}};
+use crate::{fast_input::FastInput, rand::{Rng, rng}};
 
 use crate::{solver::solve_multi, stress_external_member::{generate_test, against, brute_force}};
 

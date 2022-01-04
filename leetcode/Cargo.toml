@@ -14,5 +14,4 @@ overflow-checks = false
 overflow-checks = false
 
 [dependencies]
-ac-library-rs = {path = "../ac-library-rs"}
-template = {path = "../template"}
+contest = {path = "../contest"}
