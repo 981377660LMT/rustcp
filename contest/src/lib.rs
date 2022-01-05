@@ -16,11 +16,14 @@ pub mod poly_fft;
 pub mod poly;
 pub mod math_crt;
 pub mod primitive_root;
+
+//poly
 pub mod poly_ntt_test;
 pub mod poly_mtt_test;
 pub mod poly_common;
 pub mod poly_bf;
 pub mod poly_interpolation;
+pub mod linear_feedback_shift_register;
 
 //rand
 pub mod rand;

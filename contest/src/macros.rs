@@ -136,6 +136,22 @@ macro_rules! MulImpl {
 }
 
 
+macro_rules! SwapAttribute {
+    ($a: expr, $b: expr) => {
+        {
+            let mut _tmp = std::mem::take(&mut $a);
+            std::mem::swap(&mut $b, &mut _tmp);
+            std::mem::swap(&mut $a, &mut _tmp);
+        }
+    };
+    ($a: expr, $b: expr, $def: expr) => {
+        {
+            let mut _tmp = std::mem::replace(&mut $a, $def);
+            std::mem::swap(&mut $b, &mut _tmp);
+            std::mem::swap(&mut $a, &mut _tmp);
+        }
+    };
+}
 
 
 
@@ -158,3 +174,5 @@ pub (crate)use SubImpl;
 pub (crate)use MulImpl;
 
 pub (crate)use DivImpl;
+
+pub (crate)use SwapAttribute;
