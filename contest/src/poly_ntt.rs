@@ -6,7 +6,7 @@ use crate::{
     math::{log2_ceil, pow, dot_mul},
     modint::ModInt,
     num_integer::Integer,
-    poly::{Convolution,Inverse}, num_number::FromNumber, num_integer_reverse::BitReverse, algebraic_structure::Field, poly_common::{poly_extend, poly_length, convolution_brute_force, poly_trim},
+    poly::{Convolution,PolyInverse}, num_number::FromNumber, num_integer_reverse::BitReverse, algebraic_structure::Field, poly_common::{poly_extend, poly_length, convolution_brute_force, poly_trim},
 };
 
 pub fn ntt<I: Integer, T: ModInt<I>>(mut p: Vec<T>, inv: bool) -> Vec<T> {
@@ -76,7 +76,7 @@ impl<I: Integer, T: ModInt<I>> ConvolutionNTT<I, T> {
 
 
 
-impl<I: Integer, T: ModInt<I> + Field> Inverse<T> for ConvolutionNTT<I, T> {
+impl<I: Integer, T: ModInt<I> + Field> PolyInverse<T> for ConvolutionNTT<I, T> {
 
     fn inverse_internal(data: &[T]) -> Vec<T> {
         if data.len() == 1 {
@@ -100,9 +100,9 @@ impl<I: Integer, T: ModInt<I> + Field> Inverse<T> for ConvolutionNTT<I, T> {
 }
 impl<I: Integer, T: ModInt<I>> Convolution<T> for ConvolutionNTT<I, T> {
     fn convolution(a: Vec<T>, b: Vec<T>) -> Vec<T> {
-        if a.len() < 50 || b.len() < 50 {
-            return convolution_brute_force(a, b);
-        }
+        // if a.len() < 50 || b.len() < 50 {
+        //     return convolution_brute_force(a, b);
+        // }
 
         let mut a = poly_trim(a);
         let mut b = poly_trim(b);

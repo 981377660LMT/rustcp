@@ -1,7 +1,7 @@
 use crate::algebraic_structure::Field;
 use crate::macros::should;
 use crate::num_number::Number;
-use crate::poly::{Inverse};
+use crate::poly::{PolyInverse};
 use crate::poly_common::poly_trim;
 use crate::{
     math::max_batch,
@@ -89,5 +89,5 @@ impl<I: Integer, T: ModInt<I>> Convolution<T> for ConvolutionMTT<I, T> {
     }
 }
 
-impl<I: Integer, T: ModInt<I> + Field> Inverse<T> for ConvolutionMTT<I, T> {
+impl<I: Integer, T: ModInt<I> + Field> PolyInverse<T> for ConvolutionMTT<I, T> {
 }

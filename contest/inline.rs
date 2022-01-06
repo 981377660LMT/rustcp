@@ -1,4 +1,4 @@
-//Timestamp: 2022-01-05 00:35:01
+//Timestamp: 2022-01-06 01:11:12
 pub mod fast_input {
     use std::io;
     use std::io::BufRead;
@@ -111,6 +111,208 @@ pub mod fast_input {
             return res;
         }
     }
+}
+pub mod collection {
+    use std::collections::HashMap;
+    use std::mem::swap;
+
+    pub fn group_by_dense<T, V>(
+        n: usize,
+        data: &[T],
+        to_key: impl Fn(usize, &T) -> usize,
+        to_value: impl Fn(usize, &T) -> V,
+    ) -> Vec<Vec<V>> {
+        let mut sizes = vec![0usize; n];
+        for (index, x) in data.iter().enumerate() {
+            sizes[to_key(index, x)] += 1;
+        }
+        let mut res: Vec<Vec<V>> = sizes.iter().map(|&x| Vec::with_capacity(x)).collect();
+        for (index, x) in data.iter().enumerate() {
+            res[to_key(index, x)].push(to_value(index, x));
+        }
+
+        res
+    }
+
+    pub fn swap_element<T>(data: &mut [T], a: usize, b: usize) {
+        if a > b {
+            let (p1, p2) = data.split_at_mut(a);
+            swap(&mut p1[b], &mut p2[0]);
+        } else if b > a {
+            let (p1, p2) = data.split_at_mut(b);
+            swap(&mut p1[a], &mut p2[0]);
+        }
+    }
+
+    pub fn swap_element_attr<T, V>(
+        data: &mut [T],
+        a: usize,
+        b: usize,
+        extractor: impl Fn(&mut T) -> &mut V,
+    ) {
+        if a > b {
+            let (p1, p2) = data.split_at_mut(a);
+            swap(extractor(&mut p1[b]), extractor(&mut p2[0]));
+        } else if b > a {
+            let (p1, p2) = data.split_at_mut(b);
+            swap(extractor(&mut p1[a]), extractor(&mut p2[0]));
+        }
+    }
+}
+pub mod macros {
+
+    #[cfg(feature = "local-build")]
+    macro_rules! should {
+    ($($e: expr),*) => {
+        $(
+            assert!($e);
+        )*
+    }
+}
+
+    #[cfg(not(feature = "local-build"))]
+    macro_rules! should {
+        ($($e: expr),*) => {};
+    }
+
+    #[cfg(feature = "local-build")]
+    macro_rules! should_eq {
+    ($($a: expr, $b: expr);*) => {
+        $(
+            assert_eq!($a, $b);
+        )*
+    }
+}
+
+    #[cfg(not(feature = "local-build"))]
+    macro_rules! should_eq {
+        ($($e: expr),*) => {};
+    }
+
+    #[cfg(feature = "local-build")]
+    macro_rules! debug {
+        ($e: expr) => {
+            dbg!($e)
+        };
+    }
+
+    #[cfg(not(feature = "local-build"))]
+    macro_rules! debug {
+        ($e: expr) => {
+            std::convert::identity($e)
+        };
+    }
+
+    #[cfg(feature = "local-build")]
+    macro_rules! debug_discard {
+        ($e: expr) => {
+            dbg!($e)
+        };
+    }
+
+    #[cfg(not(feature = "local-build"))]
+    macro_rules! debug_discard {
+        ($e: expr) => {};
+    }
+
+    macro_rules! input {
+
+    ($fi:ident, $var:ident $( : $t:ty)?, $($arg:tt)*) => {
+        let mut $var $(: $t)? = $fi.read();
+        input!($fi, $($arg)*)
+    };
+
+    ($fi: ident $(,)?) => {
+    };
+}
+
+    macro_rules! MergerImpl {
+        ($name: ident, $A: ty, $B: ty, $C: ty, $a: ident, $b: ident, $body: tt) => {
+            struct $name;
+            impl Merger<$A, $B, $C> for $name {
+                fn merge($a: $A, $b: $B) -> $C {
+                    $body
+                }
+            }
+        };
+    }
+
+    macro_rules! AddImpl {
+        ($A: ty, $B: ty, $C: ty, $a: ident, $b: ident, $body: tt) => {
+            impl Add<$B> for $A {
+                type Output = $C;
+
+                fn add(self, $b: $B) -> Self::Output {
+                    let $a = self;
+                    $body
+                }
+            }
+        };
+    }
+
+    macro_rules! SubImpl {
+        ($A: ty, $B: ty, $C: ty, $a: ident, $b: ident, $body: tt) => {
+            impl Mul<$B> for $A {
+                type Output = $C;
+
+                fn sub(self, $b: $B) -> Self::Output {
+                    let $a = self;
+                    $body
+                }
+            }
+        };
+    }
+
+    macro_rules! DivImpl {
+        ($A: ty, $B: ty, $C: ty, $a: ident, $b: ident, $body: tt) => {
+            impl Mul<$B> for $A {
+                type Output = $C;
+
+                fn div(self, $b: $B) -> Self::Output {
+                    let $a = self;
+                    $body
+                }
+            }
+        };
+    }
+
+    macro_rules! MulImpl {
+        ($A: ty, $B: ty, $C: ty, $a: ident, $b: ident, $body: tt) => {
+            impl Sub<$B> for $A {
+                type Output = $C;
+
+                fn mul(self, $b: $B) -> Self::Output {
+                    let $a = self;
+                    $body
+                }
+            }
+        };
+    }
+
+    macro_rules! SwapAttribute {
+        ($a: expr, $b: expr) => {{
+            let mut _tmp = std::mem::take(&mut $a);
+            std::mem::swap(&mut $b, &mut _tmp);
+            std::mem::swap(&mut $a, &mut _tmp);
+        }};
+        ($a: expr, $b: expr, $def: expr) => {{
+            let mut _tmp = std::mem::replace(&mut $a, $def);
+            std::mem::swap(&mut $b, &mut _tmp);
+            std::mem::swap(&mut $a, &mut _tmp);
+        }};
+    }
+
+    pub(crate) use debug;
+    pub(crate) use debug_discard;
+    pub(crate) use input;
+    pub(crate) use should;
+    pub(crate) use should_eq;
+    pub(crate) use AddImpl;
+    pub(crate) use DivImpl;
+    pub(crate) use MergerImpl;
+    pub(crate) use MulImpl;
+    pub(crate) use SubImpl;
+    pub(crate) use SwapAttribute;
 }
 pub mod num_number {
     use std::fmt::Debug;
@@ -630,147 +832,6 @@ pub mod num_float {
         exponent -= 1023 + 52;
         (mantissa, exponent, sign)
     }
-}
-pub mod macros {
-
-    #[cfg(feature = "local-build")]
-    macro_rules! should {
-    ($($e: expr),*) => {
-        $(
-            assert!($e);
-        )*
-    }
-}
-
-    #[cfg(not(feature = "local-build"))]
-    macro_rules! should {
-        ($($e: expr),*) => {};
-    }
-
-    #[cfg(feature = "local-build")]
-    macro_rules! should_eq {
-    ($($a: expr, $b: expr);*) => {
-        $(
-            assert_eq!($a, $b);
-        )*
-    }
-}
-
-    #[cfg(not(feature = "local-build"))]
-    macro_rules! should_eq {
-        ($($e: expr),*) => {};
-    }
-
-    #[cfg(feature = "local-build")]
-    macro_rules! debug {
-        ($e: expr) => {
-            dbg!($e)
-        };
-    }
-
-    #[cfg(not(feature = "local-build"))]
-    macro_rules! debug {
-        ($e: expr) => {
-            std::convert::identity($e)
-        };
-    }
-
-    #[cfg(feature = "local-build")]
-    macro_rules! debug_discard {
-        ($e: expr) => {
-            dbg!($e)
-        };
-    }
-
-    #[cfg(not(feature = "local-build"))]
-    macro_rules! debug_discard {
-        ($e: expr) => {};
-    }
-
-    macro_rules! input {
-
-    ($fi:ident, $var:ident $( : $t:ty)?, $($arg:tt)*) => {
-        let mut $var $(: $t)? = $fi.read();
-        input!($fi, $($arg)*)
-    };
-
-    ($fi: ident $(,)?) => {
-    };
-}
-
-    macro_rules! MergerImpl {
-        ($name: ident, $A: ty, $B: ty, $C: ty, $a: ident, $b: ident, $body: tt) => {
-            struct $name;
-            impl Merger<$A, $B, $C> for $name {
-                fn merge($a: $A, $b: $B) -> $C {
-                    $body
-                }
-            }
-        };
-    }
-
-    macro_rules! AddImpl {
-        ($A: ty, $B: ty, $C: ty, $a: ident, $b: ident, $body: tt) => {
-            impl Add<$B> for $A {
-                type Output = $C;
-
-                fn add(self, $b: $B) -> Self::Output {
-                    let $a = self;
-                    $body
-                }
-            }
-        };
-    }
-
-    macro_rules! SubImpl {
-        ($A: ty, $B: ty, $C: ty, $a: ident, $b: ident, $body: tt) => {
-            impl Mul<$B> for $A {
-                type Output = $C;
-
-                fn sub(self, $b: $B) -> Self::Output {
-                    let $a = self;
-                    $body
-                }
-            }
-        };
-    }
-
-    macro_rules! DivImpl {
-        ($A: ty, $B: ty, $C: ty, $a: ident, $b: ident, $body: tt) => {
-            impl Mul<$B> for $A {
-                type Output = $C;
-
-                fn div(self, $b: $B) -> Self::Output {
-                    let $a = self;
-                    $body
-                }
-            }
-        };
-    }
-
-    macro_rules! MulImpl {
-        ($A: ty, $B: ty, $C: ty, $a: ident, $b: ident, $body: tt) => {
-            impl Sub<$B> for $A {
-                type Output = $C;
-
-                fn mul(self, $b: $B) -> Self::Output {
-                    let $a = self;
-                    $body
-                }
-            }
-        };
-    }
-
-    pub(crate) use debug;
-    pub(crate) use debug_discard;
-    pub(crate) use input;
-    pub(crate) use should;
-    pub(crate) use should_eq;
-    pub(crate) use AddImpl;
-    pub(crate) use DivImpl;
-    pub(crate) use MergerImpl;
-    pub(crate) use MulImpl;
-    pub(crate) use SubImpl;
 }
 pub mod num_integer {
     use crate::macros::should;
@@ -1567,96 +1628,6 @@ pub mod modint {
         FromNumber::from(sum)
     }
 }
-pub mod collection {
-    use std::collections::HashMap;
-    use std::mem::swap;
-
-    pub fn group_by_dense<T, V>(
-        n: usize,
-        data: &[T],
-        to_key: impl Fn(usize, &T) -> usize,
-        to_value: impl Fn(usize, &T) -> V,
-    ) -> Vec<Vec<V>> {
-        let mut sizes = vec![0usize; n];
-        for (index, x) in data.iter().enumerate() {
-            sizes[to_key(index, x)] += 1;
-        }
-        let mut res: Vec<Vec<V>> = sizes.iter().map(|&x| Vec::with_capacity(x)).collect();
-        for (index, x) in data.iter().enumerate() {
-            res[to_key(index, x)].push(to_value(index, x));
-        }
-
-        res
-    }
-
-    pub fn swap_element<T>(data: &mut [T], a: usize, b: usize) {
-        if a > b {
-            let (p1, p2) = data.split_at_mut(a);
-            swap(&mut p1[b], &mut p2[0]);
-        } else if b > a {
-            let (p1, p2) = data.split_at_mut(b);
-            swap(&mut p1[a], &mut p2[0]);
-        }
-    }
-
-    pub fn swap_element_attr<T, V>(
-        data: &mut [T],
-        a: usize,
-        b: usize,
-        extractor: impl Fn(&mut T) -> &mut V,
-    ) {
-        if a > b {
-            let (p1, p2) = data.split_at_mut(a);
-            swap(extractor(&mut p1[b]), extractor(&mut p2[0]));
-        } else if b > a {
-            let (p1, p2) = data.split_at_mut(b);
-            swap(extractor(&mut p1[a]), extractor(&mut p2[0]));
-        }
-    }
-}
-pub mod num_integer_reverse {
-    use crate::num_integer::Integer;
-    use crate::num_number::FromNumber;
-    use crate::num_number::Number;
-
-    const CACHE: [u8; 256] = [
-        0, 128, 64, 192, 32, 160, 96, 224, 16, 144, 80, 208, 48, 176, 112, 240, 8, 136, 72, 200,
-        40, 168, 104, 232, 24, 152, 88, 216, 56, 184, 120, 248, 4, 132, 68, 196, 36, 164, 100, 228,
-        20, 148, 84, 212, 52, 180, 116, 244, 12, 140, 76, 204, 44, 172, 108, 236, 28, 156, 92, 220,
-        60, 188, 124, 252, 2, 130, 66, 194, 34, 162, 98, 226, 18, 146, 82, 210, 50, 178, 114, 242,
-        10, 138, 74, 202, 42, 170, 106, 234, 26, 154, 90, 218, 58, 186, 122, 250, 6, 134, 70, 198,
-        38, 166, 102, 230, 22, 150, 86, 214, 54, 182, 118, 246, 14, 142, 78, 206, 46, 174, 110,
-        238, 30, 158, 94, 222, 62, 190, 126, 254, 1, 129, 65, 193, 33, 161, 97, 225, 17, 145, 81,
-        209, 49, 177, 113, 241, 9, 137, 73, 201, 41, 169, 105, 233, 25, 153, 89, 217, 57, 185, 121,
-        249, 5, 133, 69, 197, 37, 165, 101, 229, 21, 149, 85, 213, 53, 181, 117, 245, 13, 141, 77,
-        205, 45, 173, 109, 237, 29, 157, 93, 221, 61, 189, 125, 253, 3, 131, 67, 195, 35, 163, 99,
-        227, 19, 147, 83, 211, 51, 179, 115, 243, 11, 139, 75, 203, 43, 171, 107, 235, 27, 155, 91,
-        219, 59, 187, 123, 251, 7, 135, 71, 199, 39, 167, 103, 231, 23, 151, 87, 215, 55, 183, 119,
-        247, 15, 143, 79, 207, 47, 175, 111, 239, 31, 159, 95, 223, 63, 191, 127, 255,
-    ];
-    fn reverse_internal<T: Integer>(data: T, size: T) -> T {
-        if size == FromNumber::from(8) {
-            let res: T = <T as FromNumber>::from(CACHE[<usize as FromNumber>::from(data)]);
-            res
-        } else {
-            let half = size >> T::ONE;
-            let mask = (T::ONE << half) - T::ONE;
-            reverse_internal(data >> half, half) | (reverse_internal(data & mask, half) << half)
-        }
-    }
-
-    pub trait BitReverse {
-        fn reverse(&self) -> Self;
-    }
-    impl<T: Integer> BitReverse for T {
-        fn reverse(&self) -> Self {
-            T::from(reverse_internal(
-                self.as_unsigned(),
-                FromNumber::from(T::BITS),
-            ))
-        }
-    }
-}
 pub mod poly_common {
     use crate::algebraic_structure::Field;
     use crate::algebraic_structure::Ring;
@@ -1666,6 +1637,22 @@ pub mod poly_common {
     pub fn poly_extend<T: Ring>(mut p: Vec<T>, len: usize) -> Vec<T> {
         p.resize(len, T::zero());
         p
+    }
+
+    pub fn poly_modular<T: Ring>(mut p: Vec<T>, len: usize) -> Vec<T> {
+        if p.len() <= len {
+            p
+        } else {
+            poly_trim(poly_extend(p, len))
+        }
+    }
+
+    pub fn poly_modular_ref<T: Ring>(p: &Vec<T>, len: usize) -> Vec<T> {
+        if p.len() <= len {
+            p.clone()
+        } else {
+            poly_trim((0..len).map(|i| p[i]).collect())
+        }
     }
 
     pub fn poly_length(n: usize) -> usize {
@@ -1724,6 +1711,436 @@ pub mod poly_common {
         c
     }
 }
+pub mod poly {
+    use crate::algebraic_structure::Field;
+    use crate::algebraic_structure::Ring;
+    use crate::macros::should;
+    use crate::macros::should_eq;
+    use crate::math::inverse_batch;
+    use crate::num_integer::Integer;
+    use crate::num_number::FromNumber;
+    use crate::poly_common::poly_evaluate;
+    use crate::poly_common::poly_extend;
+    use crate::poly_common::poly_length;
+    use crate::poly_common::poly_modular;
+    use crate::poly_common::poly_modular_ref;
+    use crate::poly_common::poly_trim;
+    use std::cmp::max;
+    use std::fmt::Debug;
+    use std::marker::PhantomData;
+    use std::mem::take;
+    use std::ops::Add;
+    use std::ops::Div;
+    use std::ops::Index;
+    use std::ops::Mul;
+    use std::ops::Rem;
+    use std::ops::Sub;
+
+    pub trait Convolution<T: Ring> {
+        fn convolution(a: Vec<T>, b: Vec<T>) -> Vec<T>;
+
+        fn pow2(a: Vec<T>) -> Vec<T> {
+            let b = a.clone();
+            Self::convolution(a, b)
+        }
+    }
+
+    pub trait PolyInverse<T: Field + FromNumber>: Convolution<T> {
+        fn inverse(a: Vec<T>, n: usize) -> Vec<T> {
+            poly_trim(Self::inverse_internal(&poly_extend(a, n)[..]))
+        }
+        fn inverse_internal(p: &[T]) -> Vec<T> {
+            if p.len() == 1 {
+                return vec![T::one() / p[0]];
+            }
+            let m = p.len();
+            let prev_mod = (m + 1) / 2;
+            let proper_len = poly_length(m);
+            let C = Self::inverse_internal(p.split_at(prev_mod).0);
+            let C = poly_extend(C, proper_len);
+            let A = p.to_owned();
+            let A = poly_extend(A, proper_len);
+
+            let mut AC = poly_extend(Self::convolution(A, C.clone()), m);
+            let zero = T::zero();
+            for i in 0..m {
+                AC[i] = zero - AC[i];
+            }
+            AC[0] = AC[0] + <T as FromNumber>::from(2);
+            poly_extend(Self::convolution(C, AC), m)
+        }
+    }
+
+    #[derive(Eq)]
+    pub struct Poly<T: Ring, C: Convolution<T>>(Vec<T>, PhantomData<(T, C)>);
+    impl<T: Ring, C: Convolution<T>> PartialEq for Poly<T, C> {
+        fn eq(&self, other: &Self) -> bool {
+            self.0 == other.0
+        }
+    }
+    impl<T: Ring, C: Convolution<T>> Clone for Poly<T, C> {
+        fn clone(&self) -> Self {
+            Self(self.0.clone(), PhantomData)
+        }
+    }
+    impl<T: Ring, C: Convolution<T>> Debug for Poly<T, C> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.debug_tuple("Poly").field(&self.0).finish()
+        }
+    }
+
+    impl<T: Field + FromNumber, C: PolyInverse<T>> Poly<T, C> {
+        pub fn divider_and_remainder(self, rhs: Self) -> (Self, Self) {
+            let a = self.clone() / rhs.clone();
+            (a.clone(), self - a * rhs)
+        }
+
+        pub fn integral(&self) -> Self {
+            let rank = self.rank();
+            let p = &self.0;
+            let range: Vec<T> = (1..rank + 2).into_iter().map(T::from).collect();
+            let inv = inverse_batch(&range[..]);
+            let mut ans = vec![T::zero(); rank + 2];
+            for i in 0..=rank {
+                ans[i + 1] = inv[i] * p[i];
+            }
+            Self::new(ans)
+        }
+
+        pub fn ln(self, n: usize) -> Self {
+            should_eq!(self.0[0], T::one());
+            let diff = self.differential().modular(n);
+            let inv = self.inverse(n);
+            let prod = (diff * inv).modular(n);
+            let ans = prod.integral();
+            ans.modular(n)
+        }
+
+        pub fn exp(self, n: usize) -> Self {
+            if n == 0 {
+                Self::zero()
+            } else {
+                self.modular(n).exp0(n)
+            }
+        }
+
+        fn exp0(&self, n: usize) -> Self {
+            if n == 1 {
+                Self::one()
+            } else {
+                let mut ans = self.exp0((n + 1) / 2);
+                let mut ln = ans.clone().ln(n);
+                let mut ln = self.modular(n) - ln;
+                ln.0[0] = ln.0[0] + T::one();
+                (ans * ln).modular(n)
+            }
+        }
+        fn fast_rem(self, rhs: Self, rhs_inv: &Self) -> Self {
+            let rank = self.rank();
+            let div = self.clone().fast_div(&rhs, rhs_inv);
+            let res = self - rhs * div;
+            should!(res.rank() < rank);
+            res
+        }
+        fn fast_div(self, rhs: &Self, rhs_inv: &Self) -> Self {
+            let mut a = self.0;
+            if a.len() < rhs.0.len() {
+                return Self::default();
+            }
+            a.reverse();
+            let c_rank = a.len() - rhs.0.len();
+            let proper_len = poly_length(c_rank * 2 + 1);
+            let a = poly_modular(a, proper_len);
+            let c = poly_modular_ref(&rhs_inv.0, c_rank + 1);
+            let mut prod = poly_extend(C::convolution(a, c), c_rank + 1);
+            prod.reverse();
+            Self::new(prod)
+        }
+        pub fn downgrade_mod(self: Self, mut n: impl Iterator<Item = usize>) -> Self {
+            if self.rank() == 0 {
+                return Self::zero();
+            }
+            let mut data = self.0.clone();
+            data.reverse();
+            let inv = Self::new(data).inverse((self.rank() - 1) * 2 + 1 + 1);
+            self.downgrade_mod_internal(n, &inv)
+        }
+
+        fn downgrade_mod_internal(&self, mut n: impl Iterator<Item = usize>, inv: &Self) -> Self {
+            if let Some(bit) = n.next() {
+                let ans = self.downgrade_mod_internal(n, inv);
+                should!(ans.rank() < self.rank());
+                let mut ans = ans.pow2();
+                if bit == 1 {
+                    ans = ans.right_shift(1);
+                }
+                if ans.rank() < self.rank() {
+                    ans
+                } else {
+                    ans.fast_rem(self.clone(), inv)
+                }
+            } else {
+                Self::one()
+            }
+        }
+    }
+
+    impl<T: Field + FromNumber, C: PolyInverse<T>> Poly<T, C> {
+        pub fn inverse(self, n: usize) -> Self {
+            if n == 0 {
+                Self::zero()
+            } else {
+                Self::new(C::inverse(self.0, n))
+            }
+        }
+    }
+
+    impl<T: Ring + FromNumber, C: Convolution<T>> Poly<T, C> {
+        pub fn new(p: Vec<T>) -> Self {
+            let mut res = Self(p, PhantomData);
+            res.trim();
+            res
+        }
+
+        pub fn left_shift(&self, n: usize) -> Self {
+            let a = self.0[n..].to_vec();
+            Self::new(a)
+        }
+
+        pub fn is_zero(&self) -> bool {
+            return self.0.len() == 1 && self.0[0] == T::zero();
+        }
+
+        pub fn right_shift(&self, n: usize) -> Self {
+            if self.is_zero() {
+                return Self::zero();
+            }
+            let mut res = vec![T::zero(); n + self.0.len()];
+            for (i, e) in self.0.iter().enumerate() {
+                res[i + n] = e.clone();
+            }
+            Self::new(res)
+        }
+
+        pub fn pow2(self: Self) -> Self {
+            Self::new(C::pow2(self.0))
+        }
+
+        pub fn to_vec(self) -> Vec<T> {
+            self.0
+        }
+
+        pub fn with_constant(v: T) -> Self {
+            Self::new(vec![v])
+        }
+
+        pub fn zero() -> Self {
+            Self::new(vec![T::zero()])
+        }
+
+        pub fn one() -> Self {
+            Self::new(vec![T::one()])
+        }
+
+        pub fn convolution_delta(mut a: Self, mut b: Self) -> Self {
+            let a_rank = a.rank();
+            a.0.reverse();
+            let mut res = C::convolution(a.0, b.0);
+            let mut res = poly_extend(res, a_rank + 1);
+            res.reverse();
+            Self::new(res)
+        }
+
+        pub fn apply(&self, x: T) -> T {
+            poly_evaluate(&self.0, x)
+        }
+
+        pub fn differential(&self) -> Self {
+            let p = &self.0;
+            let mut ans = vec![T::zero(); self.rank()];
+            for i in 1..=ans.len() {
+                ans[i - 1] = p[i] * T::from(i);
+            }
+            Self::new(ans)
+        }
+
+        pub fn dot(&self, rhs: &Self) -> Self {
+            Self::new(
+                self.0
+                    .iter()
+                    .zip(rhs.0.iter())
+                    .map(|(a, b)| *a * *b)
+                    .collect(),
+            )
+        }
+
+        fn extend(&mut self, n: usize) {
+            if n <= self.0.len() {
+                return;
+            }
+            self.0.resize_with(n, T::zero);
+        }
+
+        fn trim(&mut self) {
+            self.0 = poly_trim(take(&mut self.0));
+        }
+
+        pub fn rank(&self) -> usize {
+            self.0.len() - 1
+        }
+
+        pub fn modular(&self, n: usize) -> Self {
+            Poly::new(poly_modular_ref(&self.0, n))
+        }
+
+        pub fn iter(&'_ self) -> core::slice::Iter<'_, T> {
+            return self.0.iter();
+        }
+
+        pub fn batch_mul(mut polys: &mut [Self]) -> Self {
+            if polys.len() == 1 {
+                return polys[0].clone();
+            }
+            let mid = polys.len() >> 1;
+            let (a, b) = polys.split_at_mut(mid);
+            Self::batch_mul(a) * Self::batch_mul(b)
+        }
+    }
+
+    impl<T: Ring + FromNumber, C: Convolution<T>> IntoIterator for Poly<T, C> {
+        type Item = T;
+
+        type IntoIter = std::vec::IntoIter<T>;
+
+        fn into_iter(mut self) -> std::vec::IntoIter<T> {
+            return self.0.into_iter();
+        }
+    }
+
+    impl<T: Ring + FromNumber, C: Convolution<T>> Add for Poly<T, C> {
+        type Output = Self;
+
+        fn add(self, rhs: Self) -> Self::Output {
+            let n = self.0.len();
+            let m = rhs.0.len();
+            let mut res = poly_extend(self.0, max(n, m));
+            for (index, x) in rhs.0.iter().enumerate() {
+                res[index] = res[index] + *x;
+            }
+            Self::new(res)
+        }
+    }
+
+    impl<T: Ring + FromNumber, C: Convolution<T>> Sub for Poly<T, C> {
+        type Output = Self;
+
+        fn sub(self, rhs: Self) -> Self::Output {
+            let n = self.0.len();
+            let m = rhs.0.len();
+            let mut res = poly_extend(self.0, max(n, m));
+            for (index, x) in rhs.0.iter().enumerate() {
+                res[index] = res[index] - *x;
+            }
+            Self::new(res)
+        }
+    }
+
+    impl<T: Ring + FromNumber, C: Convolution<T>> Default for Poly<T, C> {
+        fn default() -> Self {
+            Self::new(vec![T::zero()])
+        }
+    }
+
+    impl<T: Ring + FromNumber, C: Convolution<T>> Mul for Poly<T, C> {
+        type Output = Self;
+
+        fn mul(self, rhs: Self) -> Self::Output {
+            let prod = C::convolution(self.0, rhs.0);
+            Self::new(prod)
+        }
+    }
+
+    impl<T: Field + FromNumber, C: PolyInverse<T>> Div for Poly<T, C> {
+        type Output = Self;
+
+        fn div(self, rhs: Self) -> Self::Output {
+            let mut a = self.0;
+            let mut b = rhs.0;
+            if a.len() < b.len() {
+                return Self::default();
+            }
+            a.reverse();
+            b.reverse();
+            let c_rank = a.len() - b.len();
+            let proper_len = poly_length(c_rank * 2 + 1);
+            let a = poly_modular(a, proper_len);
+            let b = poly_modular(b, proper_len);
+            let c = C::inverse(b, c_rank + 1);
+            let mut prod = poly_extend(C::convolution(a, c), c_rank + 1);
+            prod.reverse();
+            Self::new(prod)
+        }
+    }
+
+    impl<T: Field + FromNumber, C: PolyInverse<T>> Rem for Poly<T, C> {
+        type Output = Self;
+
+        fn rem(self, rhs: Self) -> Self::Output {
+            self.divider_and_remainder(rhs).1
+        }
+    }
+
+    impl<T: Ring + FromNumber, C: Convolution<T>> Index<usize> for Poly<T, C> {
+        type Output = T;
+
+        fn index(&self, index: usize) -> &Self::Output {
+            &self.0[index]
+        }
+    }
+}
+pub mod num_integer_reverse {
+    use crate::num_integer::Integer;
+    use crate::num_number::FromNumber;
+    use crate::num_number::Number;
+
+    const CACHE: [u8; 256] = [
+        0, 128, 64, 192, 32, 160, 96, 224, 16, 144, 80, 208, 48, 176, 112, 240, 8, 136, 72, 200,
+        40, 168, 104, 232, 24, 152, 88, 216, 56, 184, 120, 248, 4, 132, 68, 196, 36, 164, 100, 228,
+        20, 148, 84, 212, 52, 180, 116, 244, 12, 140, 76, 204, 44, 172, 108, 236, 28, 156, 92, 220,
+        60, 188, 124, 252, 2, 130, 66, 194, 34, 162, 98, 226, 18, 146, 82, 210, 50, 178, 114, 242,
+        10, 138, 74, 202, 42, 170, 106, 234, 26, 154, 90, 218, 58, 186, 122, 250, 6, 134, 70, 198,
+        38, 166, 102, 230, 22, 150, 86, 214, 54, 182, 118, 246, 14, 142, 78, 206, 46, 174, 110,
+        238, 30, 158, 94, 222, 62, 190, 126, 254, 1, 129, 65, 193, 33, 161, 97, 225, 17, 145, 81,
+        209, 49, 177, 113, 241, 9, 137, 73, 201, 41, 169, 105, 233, 25, 153, 89, 217, 57, 185, 121,
+        249, 5, 133, 69, 197, 37, 165, 101, 229, 21, 149, 85, 213, 53, 181, 117, 245, 13, 141, 77,
+        205, 45, 173, 109, 237, 29, 157, 93, 221, 61, 189, 125, 253, 3, 131, 67, 195, 35, 163, 99,
+        227, 19, 147, 83, 211, 51, 179, 115, 243, 11, 139, 75, 203, 43, 171, 107, 235, 27, 155, 91,
+        219, 59, 187, 123, 251, 7, 135, 71, 199, 39, 167, 103, 231, 23, 151, 87, 215, 55, 183, 119,
+        247, 15, 143, 79, 207, 47, 175, 111, 239, 31, 159, 95, 223, 63, 191, 127, 255,
+    ];
+    fn reverse_internal<T: Integer>(data: T, size: T) -> T {
+        if size == FromNumber::from(8) {
+            let res: T = <T as FromNumber>::from(CACHE[<usize as FromNumber>::from(data)]);
+            res
+        } else {
+            let half = size >> T::ONE;
+            let mask = (T::ONE << half) - T::ONE;
+            reverse_internal(data >> half, half) | (reverse_internal(data & mask, half) << half)
+        }
+    }
+
+    pub trait BitReverse {
+        fn reverse(&self) -> Self;
+    }
+    impl<T: Integer> BitReverse for T {
+        fn reverse(&self) -> Self {
+            T::from(reverse_internal(
+                self.as_unsigned(),
+                FromNumber::from(T::BITS),
+            ))
+        }
+    }
+}
 pub mod poly_ntt {
     use crate::algebraic_structure::Field;
     use crate::collection::swap_element;
@@ -1736,7 +2153,7 @@ pub mod poly_ntt {
     use crate::num_integer_reverse::BitReverse;
     use crate::num_number::FromNumber;
     use crate::poly::Convolution;
-    use crate::poly::Inverse;
+    use crate::poly::PolyInverse;
     use crate::poly_common::convolution_brute_force;
     use crate::poly_common::poly_extend;
     use crate::poly_common::poly_length;
@@ -1808,7 +2225,7 @@ pub mod poly_ntt {
         }
     }
 
-    impl<I: Integer, T: ModInt<I> + Field> Inverse<T> for ConvolutionNTT<I, T> {
+    impl<I: Integer, T: ModInt<I> + Field> PolyInverse<T> for ConvolutionNTT<I, T> {
         fn inverse_internal(data: &[T]) -> Vec<T> {
             if data.len() == 1 {
                 return vec![data[0].possible_inv().unwrap()];
@@ -1831,10 +2248,6 @@ pub mod poly_ntt {
     }
     impl<I: Integer, T: ModInt<I>> Convolution<T> for ConvolutionNTT<I, T> {
         fn convolution(a: Vec<T>, b: Vec<T>) -> Vec<T> {
-            if a.len() < 50 || b.len() < 50 {
-                return convolution_brute_force(a, b);
-            }
-
             let mut a = poly_trim(a);
             let mut b = poly_trim(b);
             let len = a.len() + b.len() - 1;
@@ -1858,407 +2271,10 @@ pub mod poly_ntt {
         }
     }
 }
-pub mod poly {
-    use crate::algebraic_structure::Field;
-    use crate::algebraic_structure::Ring;
-    use crate::arithmetic::AssociativeAdd;
-    use crate::macros::should_eq;
-    use crate::math::inverse_batch;
-    use crate::math::log2_ceil;
-    use crate::modint::ModInt;
-    use crate::num_integer::Integer;
-    use crate::num_number::FromNumber;
-    use crate::poly_common::poly_evaluate;
-    use crate::poly_common::poly_extend;
-    use crate::poly_common::poly_length;
-    use crate::poly_common::poly_trim;
-    use crate::poly_ntt::ConvolutionNTT;
-    use std::cmp::max;
-    use std::cmp::min;
-    use std::fmt::Debug;
-    use std::marker::PhantomData;
-    use std::mem::take;
-    use std::ops::Add;
-    use std::ops::Div;
-    use std::ops::Index;
-    use std::ops::Mul;
-    use std::ops::Rem;
-    use std::ops::Sub;
-    use std::task::Poll;
-
-    pub trait Convolution<T: Ring> {
-        fn convolution(a: Vec<T>, b: Vec<T>) -> Vec<T>;
-
-        fn pow2(a: Vec<T>) -> Vec<T> {
-            Self::convolution(a.clone(), a)
-        }
-    }
-
-    pub trait Inverse<T: Field + FromNumber>: Convolution<T> {
-        fn inverse(a: Vec<T>, n: usize) -> Vec<T> {
-            poly_trim(Self::inverse_internal(&poly_extend(a, n)[..]))
-        }
-        fn inverse_internal(p: &[T]) -> Vec<T> {
-            if p.len() == 1 {
-                return vec![T::one() / p[0]];
-            }
-            let m = p.len();
-            let prev_mod = (m + 1) / 2;
-            let proper_len = poly_length(m);
-            let C = Self::inverse_internal(p.split_at(prev_mod).0);
-            let C = poly_extend(C, proper_len);
-            let A = p.to_owned();
-            let A = poly_extend(A, proper_len);
-
-            let mut AC = poly_extend(Self::convolution(A, C.clone()), m);
-            let zero = T::zero();
-            for i in 0..m {
-                AC[i] = zero - AC[i];
-            }
-            AC[0] = AC[0] + <T as FromNumber>::from(2);
-            poly_extend(Self::convolution(C, AC), m)
-        }
-    }
-
-    #[derive(Eq)]
-    pub struct Poly<T: Ring, C: Convolution<T>>(Vec<T>, PhantomData<(T, C)>);
-    impl<T: Ring, C: Convolution<T>> PartialEq for Poly<T, C> {
-        fn eq(&self, other: &Self) -> bool {
-            self.0 == other.0
-        }
-    }
-    impl<T: Ring, C: Convolution<T>> Clone for Poly<T, C> {
-        fn clone(&self) -> Self {
-            Self(self.0.clone(), PhantomData)
-        }
-    }
-    impl<T: Ring, C: Convolution<T>> Debug for Poly<T, C> {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            f.debug_tuple("Poly").field(&self.0).finish()
-        }
-    }
-
-    impl<T: Field + FromNumber, C: Inverse<T>> Poly<T, C> {
-        pub fn divider_and_remainder(self, rhs: Self) -> (Self, Self) {
-            let a = self.clone() / rhs.clone();
-            (a.clone(), self - a * rhs)
-        }
-
-        pub fn integral(&self) -> Self {
-            let rank = self.rank();
-            let p = &self.0;
-            let range: Vec<T> = (1..rank + 2).into_iter().map(T::from).collect();
-            let inv = inverse_batch(&range[..]);
-            let mut ans = vec![T::zero(); rank + 2];
-            for i in 0..=rank {
-                ans[i + 1] = inv[i] * p[i];
-            }
-            Self::new(ans)
-        }
-
-        pub fn ln(self, n: usize) -> Self {
-            should_eq!(self.0[0], T::one());
-            let diff = self.differential().modular(n);
-            let inv = self.inverse(n);
-            let prod = (diff * inv).modular(n);
-            let ans = prod.integral();
-            ans.modular(n)
-        }
-
-        pub fn exp(self, n: usize) -> Self {
-            if n == 0 {
-                Self::zero()
-            } else {
-                self.modular(n).exp0(n)
-            }
-        }
-
-        fn exp0(&self, n: usize) -> Self {
-            if n == 1 {
-                Self::one()
-            } else {
-                let mut ans = self.exp0((n + 1) / 2);
-                let mut ln = ans.clone().ln(n);
-                let mut ln = self.modular(n) - ln;
-                ln.0[0] = ln.0[0] + T::one();
-                (ans * ln).modular(n)
-            }
-        }
-    }
-
-    impl<T: Field + FromNumber, C: Inverse<T>> Poly<T, C> {
-        pub fn inverse(self, n: usize) -> Self {
-            if n == 0 {
-                Self::zero()
-            } else {
-                Self::new(C::inverse(self.0, n))
-            }
-        }
-    }
-
-    impl<T: Ring + FromNumber, C: Convolution<T>> Poly<T, C> {
-        pub fn new(p: Vec<T>) -> Self {
-            let mut res = Self(p, PhantomData);
-            res.trim();
-            res
-        }
-
-        pub fn to_vec(self) -> Vec<T> {
-            self.0
-        }
-
-        pub fn with_constant(v: T) -> Self {
-            Self::new(vec![v])
-        }
-
-        pub fn zero() -> Self {
-            Self::new(vec![T::zero()])
-        }
-
-        pub fn one() -> Self {
-            Self::new(vec![T::one()])
-        }
-
-        pub fn convolution_delta(mut a: Self, mut b: Self) -> Self {
-            let a_rank = a.rank();
-            a.0.reverse();
-            let mut res = C::convolution(a.0, b.0);
-            let mut res = poly_extend(res, a_rank + 1);
-            res.reverse();
-            Self::new(res)
-        }
-
-        pub fn apply(&self, x: T) -> T {
-            poly_evaluate(&self.0, x)
-        }
-
-        pub fn differential(&self) -> Self {
-            let p = &self.0;
-            let mut ans = vec![T::zero(); self.rank()];
-            for i in 1..=ans.len() {
-                ans[i - 1] = p[i] * T::from(i);
-            }
-            Self::new(ans)
-        }
-
-        pub fn dot(&self, rhs: &Self) -> Self {
-            Self::new(
-                self.0
-                    .iter()
-                    .zip(rhs.0.iter())
-                    .map(|(a, b)| *a * *b)
-                    .collect(),
-            )
-        }
-
-        fn extend(&mut self, n: usize) {
-            if n <= self.0.len() {
-                return;
-            }
-            self.0.resize_with(n, T::zero);
-        }
-
-        fn trim(&mut self) {
-            self.0 = poly_trim(take(&mut self.0));
-        }
-
-        pub fn rank(&self) -> usize {
-            self.0.len() - 1
-        }
-
-        pub fn modular(&self, n: usize) -> Self {
-            if self.rank() < n {
-                self.clone()
-            } else {
-                Self::new(self.0[0..n].iter().map(|x| *x).collect())
-            }
-        }
-
-        pub fn iter(&'_ self) -> core::slice::Iter<'_, T> {
-            return self.0.iter();
-        }
-
-        pub fn batch_mul(mut polys: &mut [Self]) -> Self {
-            if polys.len() == 1 {
-                return polys[0].clone();
-            }
-            let mid = polys.len() >> 1;
-            let (a, b) = polys.split_at_mut(mid);
-            Self::batch_mul(a) * Self::batch_mul(b)
-        }
-    }
-
-    impl<T: Ring + FromNumber, C: Convolution<T>> IntoIterator for Poly<T, C> {
-        type Item = T;
-
-        type IntoIter = std::vec::IntoIter<T>;
-
-        fn into_iter(mut self) -> std::vec::IntoIter<T> {
-            return self.0.into_iter();
-        }
-    }
-
-    impl<T: Ring + FromNumber, C: Convolution<T>> Add for Poly<T, C> {
-        type Output = Self;
-
-        fn add(self, rhs: Self) -> Self::Output {
-            let n = self.0.len();
-            let m = rhs.0.len();
-            let mut res = poly_extend(self.0, max(n, m));
-            for (index, x) in rhs.0.iter().enumerate() {
-                res[index] = res[index] + *x;
-            }
-            Self::new(res)
-        }
-    }
-
-    impl<T: Ring + FromNumber, C: Convolution<T>> Sub for Poly<T, C> {
-        type Output = Self;
-
-        fn sub(self, rhs: Self) -> Self::Output {
-            let n = self.0.len();
-            let m = rhs.0.len();
-            let mut res = poly_extend(self.0, max(n, m));
-            for (index, x) in rhs.0.iter().enumerate() {
-                res[index] = res[index] - *x;
-            }
-            Self::new(res)
-        }
-    }
-
-    impl<T: Ring + FromNumber, C: Convolution<T>> Default for Poly<T, C> {
-        fn default() -> Self {
-            Self::new(vec![T::zero()])
-        }
-    }
-
-    impl<T: Ring + FromNumber, C: Convolution<T>> Mul for Poly<T, C> {
-        type Output = Self;
-
-        fn mul(self, rhs: Self) -> Self::Output {
-            let prod = C::convolution(self.0, rhs.0);
-            Self::new(prod)
-        }
-    }
-
-    impl<T: Field + FromNumber, C: Inverse<T>> Div for Poly<T, C> {
-        type Output = Self;
-
-        fn div(self, rhs: Self) -> Self::Output {
-            let mut a = self.0;
-            let mut b = rhs.0;
-            if a.len() < b.len() {
-                return Self::default();
-            }
-            a.reverse();
-            b.reverse();
-            let c_rank = a.len() - b.len();
-            let proper_len = poly_length(c_rank * 2 + 1);
-            let a = poly_extend(a, proper_len);
-            let b = poly_extend(b, proper_len);
-            let c = C::inverse(b, c_rank + 1);
-            let mut prod = poly_extend(C::convolution(a, c), c_rank + 1);
-            prod.reverse();
-            Self::new(prod)
-        }
-    }
-
-    impl<T: Field + FromNumber, C: Inverse<T>> Rem for Poly<T, C> {
-        type Output = Self;
-
-        fn rem(self, rhs: Self) -> Self::Output {
-            self.divider_and_remainder(rhs).1
-        }
-    }
-
-    impl<T: Ring + FromNumber, C: Convolution<T>> Index<usize> for Poly<T, C> {
-        type Output = T;
-
-        fn index(&self, index: usize) -> &Self::Output {
-            &self.0[index]
-        }
-    }
-}
-pub mod poly_interpolation {
-    use crate::algebraic_structure::Field;
-    use crate::poly::Convolution;
-    use crate::poly::Poly;
-    use crate::poly_common::convolution_brute_force;
-    use crate::poly_common::poly_div_and_rem;
-    use crate::poly_common::poly_evaluate;
-    use crate::poly_common::poly_trim;
-    use std::collections::HashMap;
-    use std::hash::Hash;
-    use std::mem::take;
-
-    pub struct GravityLargrangeInterpolation<T: Field + Hash> {
-        points: HashMap<T, T>,
-        xs: Vec<T>,
-        ys: Vec<T>,
-        lx: Vec<T>,
-        inv_w: Vec<T>,
-    }
-
-    impl<T: Field + Hash> GravityLargrangeInterpolation<T> {
-        pub fn new(cap: usize) -> Self {
-            let mut res = Self {
-                xs: Vec::with_capacity(cap),
-                ys: Vec::with_capacity(cap),
-                lx: vec![T::one()],
-                inv_w: Vec::with_capacity(cap),
-                points: HashMap::with_capacity(cap),
-            };
-            res
-        }
-        pub fn add(&mut self, x: T, y: T) {
-            if self.points.contains_key(&x) {
-                return;
-            }
-            let n = self.xs.len();
-            self.points.insert(x, y);
-            self.xs.push(x);
-            self.ys.push(y);
-            self.lx = convolution_brute_force(vec![T::zero() - x, T::one()], take(&mut self.lx));
-            self.inv_w.push(T::one());
-            for i in 0..n {
-                self.inv_w[i] = self.inv_w[i] * (self.xs[i] - x);
-                self.inv_w[n] = self.inv_w[n] * (x - self.xs[i]);
-            }
-        }
-
-        pub fn estimate_point(&self, x: T) -> T {
-            if let Some(y) = self.points.get(&x) {
-                return *y;
-            }
-            let y = poly_evaluate(&self.lx, x);
-            let mut sum = T::zero();
-            for i in 0..self.xs.len() {
-                let val = self.inv_w[i] * (x - self.xs[i]);
-                let val = self.ys[i] / val;
-                sum = sum + val;
-            }
-            y * sum
-        }
-
-        pub fn interpolate(&self) -> Vec<T> {
-            let n = self.xs.len();
-            let mut ans = vec![T::zero(); n];
-            for i in 0..n {
-                let c = self.ys[i] / self.inv_w[i];
-                let div =
-                    poly_div_and_rem(self.lx.clone(), vec![T::zero() - self.xs[i], T::one()]).0;
-                for (i, x) in div.iter().enumerate() {
-                    ans[i] = ans[i] + *x * c;
-                }
-            }
-            let ans = poly_trim(ans);
-            ans
-        }
-    }
-}
 pub mod static_modint {
     use crate::algebraic_structure::*;
     use crate::arithmetic::*;
+    use crate::macros::should;
     use crate::modint::ModInt;
     use crate::num_gcd::inv_mod;
     use crate::num_integer::Integer;
@@ -2403,6 +2419,7 @@ pub mod static_modint {
     {
         #[inline(always)]
         pub fn new(v: T) -> Self {
+            should!(v >= T::zero() && v < F::M);
             Self {
                 v,
                 phantom: PhantomData,
@@ -2569,12 +2586,47 @@ pub mod static_modint {
     }
     pub(crate) use StaticModulusFactoryImpl;
 }
+pub mod linear_recurrence {
+    use crate::algebraic_structure::Field;
+    use crate::macros::debug;
+    use crate::macros::debug_discard;
+    use crate::macros::should;
+    use crate::macros::should_eq;
+    use crate::num_number::FromNumber;
+    use crate::poly::Poly;
+    use crate::poly::PolyInverse;
+
+    pub fn kth_term_of_linear_recurrence<
+        T: Field + FromNumber,
+        C: PolyInverse<T>,
+        I: Iterator<Item = usize>,
+    >(
+        mut lr: Vec<T>,
+        prefix: &Vec<T>,
+        k: I,
+    ) -> T {
+        should!(lr.len() - 1 <= prefix.len());
+        should_eq!(lr[0], T::one());
+        lr.reverse();
+        let modulus = Poly::<T, C>::new(lr);
+        let ans = modulus.downgrade_mod(k);
+        ans.iter()
+            .zip(prefix.iter())
+            .map(|(a, b)| *a * *b)
+            .reduce(|a, b| a + b)
+            .unwrap()
+    }
+}
 pub mod solver {
     use crate::algebraic_structure::*;
     use crate::arithmetic::*;
     use crate::fast_input::FastInput;
+    use crate::linear_recurrence::kth_term_of_linear_recurrence;
     use crate::macros::input;
-    use crate::poly_interpolation::GravityLargrangeInterpolation;
+    use crate::num_integer::Integer;
+    use crate::num_number::FromNumber;
+    use crate::poly::Poly;
+    use crate::poly_ntt::ConvolutionNTT;
     use crate::static_modint::StaticModInt;
     use crate::static_modint::MF998244353;
     use std::io::BufRead;
@@ -2586,28 +2638,27 @@ pub mod solver {
     use std::panic;
 
     type mi = StaticModInt<i32, MF998244353>;
+    type conv = ConvolutionNTT<i32, mi>;
     pub unsafe fn solve_one<I: BufRead>(
         test_id: usize,
         fi: &mut FastInput<I>,
         fo: &mut impl Write,
     ) {
-        let n = fi.ru();
-        let mut int = GravityLargrangeInterpolation::new(n);
-        for _ in 0..n {
-            let t = fi.ri();
-            if t == 1 {
-                input! {
-                    fi,
-                    x: mi,
-                    y: mi,
-                }
-                int.add(x, y);
-            } else {
-                let k = fi.r();
-                let ans = int.estimate_point(k);
-                writeln!(fo, "{}", ans);
-            }
+        input! {
+            fi,
+            d: usize,
+            k: u64,
         }
+        let a: Vec<mi> = (0..d).map(|_| fi.r()).collect();
+        let mut c: Vec<mi> = (0..d).map(|_| fi.r()).collect();
+        c.push(FromNumber::from(-1));
+        let mut c = c.iter().rev().map(|x| mi::zero() - *x).collect();
+        let kth = kth_term_of_linear_recurrence::<_, conv, _>(
+            c,
+            &a,
+            (0..60).map(|i| k.kth_bit(i) as usize),
+        );
+        writeln!(fo, "{}", kth);
     }
 
     pub unsafe fn solve_multi<I: BufRead>(fi: &mut FastInput<I>, fo: &mut impl Write) {

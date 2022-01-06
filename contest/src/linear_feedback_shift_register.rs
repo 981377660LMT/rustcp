@@ -1,7 +1,8 @@
-use std::{ops::{Add, Index}, cmp::max, mem::swap, collections::VecDeque};
+use std::{ops::{Index}, cmp::max, collections::VecDeque, fmt::{Display, Pointer}};
 
 use crate::{algebraic_structure::Field, macros::SwapAttribute};
 
+#[derive(Debug, Clone)]
 pub struct LinearFeedbackShiftRegister<T: Field> {
     cm: Vec<T>,
     m: usize,
@@ -50,7 +51,7 @@ impl<T: Field> LinearFeedbackShiftRegister<T> {
         ans
     } 
 
-    pub fn add(&mut self, x: T) {
+    pub fn push(&mut self, x: T) {
         let n = self.seq.len();
         self.seq.push(x);
         let dn = self.estimate_delta();
@@ -99,6 +100,6 @@ impl<T: Field> Index<usize> for LinearFeedbackShiftRegister<T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
-        &self.cn[index]
+        &self.cn[index + 1]
     }
 }

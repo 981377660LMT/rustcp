@@ -5,6 +5,22 @@ pub fn poly_extend<T: Ring>(mut p: Vec<T>, len: usize) -> Vec<T> {
     p
 }
 
+pub fn poly_modular<T: Ring>(mut p: Vec<T>, len: usize) -> Vec<T> {
+    if p.len() <= len {
+        p
+    } else {
+        poly_trim(poly_extend(p, len))
+    }
+}
+
+pub fn poly_modular_ref<T: Ring>(p: &Vec<T>, len: usize) -> Vec<T> {
+    if p.len() <= len {
+        p.clone()
+    } else {
+        poly_trim((0..len).map(|i| p[i]).collect())
+    }
+}
+
 pub fn poly_length(n: usize) -> usize {
     1 << log2_ceil(n)
 }

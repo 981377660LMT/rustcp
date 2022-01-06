@@ -1,26 +1,30 @@
 use std::{
-    cmp::{max},
+    cmp::max,
+    fmt::Debug,
     marker::PhantomData,
     mem::take,
-    ops::{Add, Div, Mul, Rem, Sub, Index}, fmt::Debug,
+    ops::{Add, Div, Index, Mul, Rem, Sub},
 };
 
 use crate::{
-    algebraic_structure::{Ring, Field}, macros::should_eq, math::{inverse_batch},
-    num_number::FromNumber, poly_common::{poly_trim, poly_extend, poly_length, poly_evaluate},
+    algebraic_structure::{Field, Ring},
+    macros::{should_eq, should},
+    math::inverse_batch,
+    num_integer::Integer,
+    num_number::FromNumber,
+    poly_common::{poly_evaluate, poly_extend, poly_length, poly_trim, poly_modular, poly_modular_ref},
 };
-
-
 
 pub trait Convolution<T: Ring> {
     fn convolution(a: Vec<T>, b: Vec<T>) -> Vec<T>;
-    
+
     fn pow2(a: Vec<T>) -> Vec<T> {
-        Self::convolution(a.clone(), a)
+        let b = a.clone();
+        Self::convolution(a, b)
     }
 }
 
-pub trait Inverse<T: Field + FromNumber>: Convolution<T>{
+pub trait PolyInverse<T: Field + FromNumber>: Convolution<T> {
     fn inverse(a: Vec<T>, n: usize) -> Vec<T> {
         poly_trim(Self::inverse_internal(&poly_extend(a, n)[..]))
     }
@@ -35,7 +39,7 @@ pub trait Inverse<T: Field + FromNumber>: Convolution<T>{
         let C = poly_extend(C, proper_len);
         let A = p.to_owned();
         let A = poly_extend(A, proper_len);
-    
+
         let mut AC = poly_extend(Self::convolution(A, C.clone()), m);
         let zero = T::zero();
         for i in 0..m {
@@ -64,8 +68,7 @@ impl<T: Ring, C: Convolution<T>> Debug for Poly<T, C> {
     }
 }
 
-impl<T: Field + FromNumber, C: Inverse<T>> Poly<T, C> 
-{
+impl<T: Field + FromNumber, C: PolyInverse<T>> Poly<T, C> {
     pub fn divider_and_remainder(self, rhs: Self) -> (Self, Self) {
         let a = self.clone() / rhs.clone();
         (a.clone(), self - a * rhs)
@@ -77,7 +80,7 @@ impl<T: Field + FromNumber, C: Inverse<T>> Poly<T, C>
         let range: Vec<T> = (1..rank + 2).into_iter().map(T::from).collect();
         let inv = inverse_batch(&range[..]);
         let mut ans = vec![T::zero(); rank + 2];
-        for i in 0..= rank {
+        for i in 0..=rank {
             ans[i + 1] = inv[i] * p[i];
         }
         Self::new(ans)
@@ -111,10 +114,59 @@ impl<T: Field + FromNumber, C: Inverse<T>> Poly<T, C>
             (ans * ln).modular(n)
         }
     }
+    fn fast_rem(self, rhs: Self, rhs_inv: &Self) -> Self {
+        let rank = self.rank();
+        let div = self.clone().fast_div(&rhs, rhs_inv);
+        let res = self - rhs * div;
+        should!(res.rank() < rank);
+        res
+    }
+    fn fast_div(self, rhs: &Self, rhs_inv: &Self) -> Self {
+        let mut a = self.0;
+        if a.len() < rhs.0.len() {
+            return Self::default();
+        }
+        a.reverse();
+        let c_rank = a.len() - rhs.0.len();
+        let proper_len = poly_length(c_rank * 2 + 1);
+        let a = poly_modular(a, proper_len);
+        let c = poly_modular_ref(&rhs_inv.0, c_rank + 1);
+        let mut prod = poly_extend(C::convolution(a, c), c_rank + 1);
+        prod.reverse();
+        Self::new(prod)
+    }
+    pub fn downgrade_mod(self: Self, mut n: impl Iterator<Item = usize>) -> Self {
+        if self.rank() == 0 {
+            return Self::zero();
+        }
+        let mut data = self.0.clone();
+        data.reverse();
+        let inv = Self::new(data).inverse((self.rank() - 1) * 2 + 1 + 1);
+        self.downgrade_mod_internal(n, &inv)
+    }
+
+
+    fn downgrade_mod_internal(&self, mut n: impl Iterator<Item = usize>, inv: &Self) -> Self {
+        if let Some(bit) = n.next() {
+            let ans = self.downgrade_mod_internal(n, inv);
+            should!(ans.rank() < self.rank());
+            let mut ans = ans.pow2();
+            if bit == 1 {
+                ans = ans.right_shift(1);
+            }
+            if ans.rank() < self.rank() {
+                ans
+            } else {
+                ans.fast_rem(self.clone(), inv)
+            }
+        } else {
+            Self::one()
+        }
+    }
 }
 
-impl<T: Field + FromNumber, C: Inverse<T>> Poly<T, C> {
-    pub fn inverse(self, n: usize) -> Self  {
+impl<T: Field + FromNumber, C: PolyInverse<T>> Poly<T, C> {
+    pub fn inverse(self, n: usize) -> Self {
         if n == 0 {
             Self::zero()
         } else {
@@ -128,6 +180,30 @@ impl<T: Ring + FromNumber, C: Convolution<T>> Poly<T, C> {
         let mut res = Self(p, PhantomData);
         res.trim();
         res
+    }
+
+    pub fn left_shift(&self, n: usize) -> Self {
+        let a = self.0[n..].to_vec();
+        Self::new(a)
+    }
+
+    pub fn is_zero(&self) -> bool {
+        return self.0.len() == 1 && self.0[0] == T::zero();
+    }
+
+    pub fn right_shift(&self, n: usize) -> Self {
+        if self.is_zero() {
+            return Self::zero();
+        }
+        let mut res = vec![T::zero(); n + self.0.len()];
+        for (i, e) in self.0.iter().enumerate() {
+            res[i + n] = e.clone();
+        }
+        Self::new(res)
+    }
+
+    pub fn pow2(self: Self) -> Self {
+        Self::new(C::pow2(self.0))
     }
 
     pub fn to_vec(self) -> Vec<T> {
@@ -168,8 +244,6 @@ impl<T: Ring + FromNumber, C: Convolution<T>> Poly<T, C> {
         Self::new(ans)
     }
 
-
-
     pub fn dot(&self, rhs: &Self) -> Self {
         Self::new(
             self.0
@@ -197,20 +271,14 @@ impl<T: Ring + FromNumber, C: Convolution<T>> Poly<T, C> {
 
     /// self % x^n
     pub fn modular(&self, n: usize) -> Self {
-        if self.rank() < n {
-            self.clone()
-        } else {
-            Self::new(self.0[0..n].iter().map(|x| *x).collect())
-        }
+        Poly::new(poly_modular_ref(&self.0, n))
     }
 
     pub fn iter(&'_ self) -> core::slice::Iter<'_, T> {
         return self.0.iter();
     }
 
-
-    
-    pub fn batch_mul(mut polys: &mut [Self]) -> Self{
+    pub fn batch_mul(mut polys: &mut [Self]) -> Self {
         if polys.len() == 1 {
             return polys[0].clone();
         }
@@ -273,7 +341,7 @@ impl<T: Ring + FromNumber, C: Convolution<T>> Mul for Poly<T, C> {
     }
 }
 
-impl<T: Field + FromNumber, C: Inverse<T>> Div for Poly<T, C> {
+impl<T: Field + FromNumber, C: PolyInverse<T>> Div for Poly<T, C> {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self::Output {
@@ -286,8 +354,8 @@ impl<T: Field + FromNumber, C: Inverse<T>> Div for Poly<T, C> {
         b.reverse();
         let c_rank = a.len() - b.len();
         let proper_len = poly_length(c_rank * 2 + 1);
-        let a = poly_extend(a, proper_len);
-        let b = poly_extend(b, proper_len);
+        let a = poly_modular(a, proper_len);
+        let b = poly_modular(b, proper_len);
         let c = C::inverse(b, c_rank + 1);
         let mut prod = poly_extend(C::convolution(a, c), c_rank + 1);
         prod.reverse();
@@ -295,7 +363,7 @@ impl<T: Field + FromNumber, C: Inverse<T>> Div for Poly<T, C> {
     }
 }
 
-impl<T: Field + FromNumber, C: Inverse<T>> Rem for Poly<T, C> {
+impl<T: Field + FromNumber, C: PolyInverse<T>> Rem for Poly<T, C> {
     type Output = Self;
 
     fn rem(self, rhs: Self) -> Self::Output {

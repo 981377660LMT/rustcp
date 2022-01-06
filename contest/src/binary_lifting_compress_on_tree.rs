@@ -5,34 +5,6 @@ use crate::{algebraic_structure::Monoid, macros::{should_eq, debug}, arithmetic:
 ///
 /// Binary lifting with O(n) memory and time complexity for preprocessing
 /// 
-/// # Example
-/// 
-/// 0
-/// |   \
-/// 1   2
-/// |\  |
-/// 3 4 5
-/// 
-/// ```
-/// use template::root_tree::*;
-/// use template::{algebraic_structure::Monoid, arithmetic::{IdentityAdd, Nil}};
-/// use template::binary_lifting_compress_on_tree::*;
-/// let p = vec![usize::MAX, 0, 0, 1, 1, 2];
-/// let depth = depth_on_tree(&p);
-/// let weight = vec![Nil;p.len()];
-/// let bl = BinaryLiftingCompress::new(&p[..], &depth[..], &weight);
-/// assert_eq!(bl.kth_ancestor(1, 1), 0);
-/// assert_eq!(bl.kth_ancestor(5, 1), 2);
-/// assert_eq!(bl.kth_ancestor(5, 2), 0);
-/// assert_eq!(bl.kth_ancestor(3, 2), 0);
-/// 
-/// assert_eq!(bl.lca(3, 4), 1);
-/// assert_eq!(bl.lca(1, 2), 0);
-/// assert_eq!(bl.lca(1, 3), 1);
-/// assert_eq!(bl.lca(1, 1), 1);
-/// assert_eq!(bl.lca(3, 5), 0);
-/// ```
-/// 
 pub struct BinaryLiftingCompress<'a, T = Nil>
 where T: Monoid {
     pub p: &'a [usize],

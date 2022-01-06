@@ -3,7 +3,7 @@ use crate::num_float::float;
 use crate::modint::ModInt;
 use crate::num_integer_reverse::BitReverse;
 use crate::num_number::FromNumber;
-use crate::poly::{Convolution, Inverse};
+use crate::poly::{Convolution, PolyInverse};
 use crate::poly_common::{poly_extend, poly_length};
 use crate::{
     collection::swap_element, complex::Complex, math::log2_ceil, num_integer::Integer,
@@ -268,5 +268,5 @@ impl<I: Integer, T: ModInt<I>> Convolution<T> for ConvolutionFFT<I, T> {
 
     
 }
-impl<I: Integer, T: ModInt<I> + Field> Inverse<T> for ConvolutionFFT<I, T> {
+impl<I: Integer, T: ModInt<I> + Field> PolyInverse<T> for ConvolutionFFT<I, T> {
 }

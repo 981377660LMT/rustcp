@@ -23,7 +23,11 @@ pub mod poly_mtt_test;
 pub mod poly_common;
 pub mod poly_bf;
 pub mod poly_interpolation;
+
+//recurrence
 pub mod linear_feedback_shift_register;
+pub mod linear_recurrence;
+pub mod linear_recurrence_test;
 
 //rand
 pub mod rand;

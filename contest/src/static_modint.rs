@@ -13,7 +13,7 @@ use crate::{
     modint::ModInt,
     num_gcd::inv_mod,
     num_integer::Integer,
-    num_number::{FromNumber, Number},
+    num_number::{FromNumber, Number}, macros::should,
 };
 
 pub trait StaticModulusFactory<T> {
@@ -146,6 +146,7 @@ where
 {
     #[inline(always)]
     pub fn new(v: T) -> Self {
+        should!(v >= T::zero() && v < F::M);
         Self {
             v,
             phantom: PhantomData,
